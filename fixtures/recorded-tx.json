@@ -1,0 +1,64 @@
+{
+  "note": "Illustrative testnet RecordedTx: a Blend pool emissions claim (BLND in) followed by a Soroswap exact-input swap of that BLND into USDC (BLND out, USDC in). Addresses are well-formed but synthetic placeholders, not real deployments. Flow amounts are decimal strings (smallest unit) because JSON has no bigint.",
+  "hash": "3389e9f0f1a32b9c7c1cf3b8a2e5d4c6b7a8901234567890abcdef1234567890a",
+  "network": "testnet",
+  "source": "fixture",
+  "ledger": 1850421,
+  "timestamp": 1748822400,
+  "addresses": {
+    "smartAccount": "CABJN4UUYDTF6C2G3WQJCWLG4KNQS2EVLCORKPWMIMSKYPU3FVNFCBS2",
+    "blendPool": "CCFZSK3W5W54JT2QPLBDDQ5W4JEIVBG3PUFONKE5YOMS52L6GQIPIV4V",
+    "soroswapRouter": "CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7",
+    "tokenBLND": "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W",
+    "tokenXLM": "CB3K24WUCQTMHS5QZONR2KP45Q5HCRQRLI6SU5ZSOB6BL6DKS3EBUJWW",
+    "tokenUSDC": "CCTTMGGQKRAV7HB7OQXVHPA6WXCW2KGSOKVAEKAS6P4MVBBG7RHA6JM7"
+  },
+  "tokens": {
+    "BLND": { "contractId": "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W", "symbol": "BLND", "decimals": 7 },
+    "XLM": { "contractId": "CB3K24WUCQTMHS5QZONR2KP45Q5HCRQRLI6SU5ZSOB6BL6DKS3EBUJWW", "symbol": "XLM", "decimals": 7 },
+    "USDC": { "contractId": "CCTTMGGQKRAV7HB7OQXVHPA6WXCW2KGSOKVAEKAS6P4MVBBG7RHA6JM7", "symbol": "USDC", "decimals": 7 }
+  },
+  "calls": [
+    {
+      "contract": "CCFZSK3W5W54JT2QPLBDDQ5W4JEIVBG3PUFONKE5YOMS52L6GQIPIV4V",
+      "fnName": "claim",
+      "args": [
+        "CABJN4UUYDTF6C2G3WQJCWLG4KNQS2EVLCORKPWMIMSKYPU3FVNFCBS2",
+        [3],
+        "CABJN4UUYDTF6C2G3WQJCWLG4KNQS2EVLCORKPWMIMSKYPU3FVNFCBS2"
+      ]
+    },
+    {
+      "contract": "CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7",
+      "fnName": "swap_exact_tokens_for_tokens",
+      "args": [
+        "12345000000",
+        "488000000",
+        [
+          "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W",
+          "CB3K24WUCQTMHS5QZONR2KP45Q5HCRQRLI6SU5ZSOB6BL6DKS3EBUJWW",
+          "CCTTMGGQKRAV7HB7OQXVHPA6WXCW2KGSOKVAEKAS6P4MVBBG7RHA6JM7"
+        ],
+        "CABJN4UUYDTF6C2G3WQJCWLG4KNQS2EVLCORKPWMIMSKYPU3FVNFCBS2",
+        9999999999
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "asset": { "contractId": "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W", "symbol": "BLND", "decimals": 7, "resolved": true },
+      "direction": "in",
+      "amount": "12345000000"
+    },
+    {
+      "asset": { "contractId": "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W", "symbol": "BLND", "decimals": 7, "resolved": true },
+      "direction": "out",
+      "amount": "12345000000"
+    },
+    {
+      "asset": { "contractId": "CCTTMGGQKRAV7HB7OQXVHPA6WXCW2KGSOKVAEKAS6P4MVBBG7RHA6JM7", "symbol": "USDC", "decimals": 7, "resolved": true },
+      "direction": "in",
+      "amount": "493800000"
+    }
+  ]
+}
