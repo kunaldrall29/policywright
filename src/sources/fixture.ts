@@ -12,15 +12,7 @@
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import type {
-  AssetFlow,
-  CallArg,
-  FlowDirection,
-  Network,
-  RecordedTx,
-  ScopedCall,
-  TokenRef,
-} from '../types.js';
+import type { AssetFlow, CallArg, Network, RecordedTx, ScopedCall, TokenRef } from '../types.js';
 
 /** Path to the committed fixture, resolved relative to this module. */
 const FIXTURE_URL = new URL('../../fixtures/recorded-tx.json', import.meta.url);
@@ -121,7 +113,7 @@ function requireFlow(value: unknown, path: string): AssetFlow {
   }
   return {
     asset: requireTokenRef(value['asset'], `${path}.asset`),
-    direction: direction as FlowDirection,
+    direction,
     amount: requireAmount(value['amount'], `${path}.amount`),
   };
 }

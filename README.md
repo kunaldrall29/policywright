@@ -30,7 +30,7 @@ RecordedTx ─▶ synthesize ─▶ SmartAccountSpec ─▶ emit ─┬─▶ sp
    - **no cap** for assets that only flowed in (e.g. the USDC received) — the
      minimal-permission case;
    - an always-on frequency-limit policy.
-3. **Emit** — render the spec as JSON, a human-readable summary, and an *illustrative*
+3. **Emit** — render the spec as JSON, a human-readable summary, and an _illustrative_
    custom Rust policy.
 4. **Simulate** — dry-run candidate calls against the spec and report whether each would
    be permitted or denied (and why), before anything is installed on-chain.
@@ -48,12 +48,12 @@ any scenario deviates, so it doubles as a smoke test. It needs no network access
 
 ## Commands
 
-| Command | What it does |
-| --- | --- |
-| `npm run demo` | End-to-end pipeline + dry-run self-check (offline). |
-| `npm run cli -- synth` | Synthesize a spec from the fixture and print the summary + JSON. |
-| `npm run cli -- simulate` | Run the dry-run scenarios against the fixture's spec. |
-| `npm run record -- <txHash> [--network testnet\|mainnet\|futurenet]` | Fetch a live transaction by hash and print the recording. |
+| Command                                                              | What it does                                                     |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `npm run demo`                                                       | End-to-end pipeline + dry-run self-check (offline).              |
+| `npm run cli -- synth`                                               | Synthesize a spec from the fixture and print the summary + JSON. |
+| `npm run cli -- simulate`                                            | Run the dry-run scenarios against the fixture's spec.            |
+| `npm run record -- <txHash> [--network testnet\|mainnet\|futurenet]` | Fetch a live transaction by hash and print the recording.        |
 
 The live `record` path is optional and not exercised by the demo or tests. Given a valid
 transaction hash within the RPC node's retention window, it decodes the `InvokeContract`
@@ -76,15 +76,15 @@ npm run build       # emit dist/ (tsconfig.build.json)
 
 ## Project layout
 
-| Path | Purpose |
-| --- | --- |
-| `src/types.ts` | Core domain types (single source of truth). |
-| `src/sources/fixture.ts` | Loads the baked-in offline recording. |
-| `src/sources/rpc.ts` | Optional live Soroban RPC adapter. |
-| `src/synthesizer.ts` | `RecordedTx` → `SmartAccountSpec`. |
-| `src/emitter.ts`, `src/rust-policy.ts` | Render spec JSON, summary, and Rust. |
-| `src/simulate.ts` | Dry-run evaluator + scenarios + report. |
-| `src/demo.ts`, `src/cli.ts` | Demo orchestration and CLI. |
-| `fixtures/recorded-tx.json` | The committed offline recording. |
+| Path                                   | Purpose                                     |
+| -------------------------------------- | ------------------------------------------- |
+| `src/types.ts`                         | Core domain types (single source of truth). |
+| `src/sources/fixture.ts`               | Loads the baked-in offline recording.       |
+| `src/sources/rpc.ts`                   | Optional live Soroban RPC adapter.          |
+| `src/synthesizer.ts`                   | `RecordedTx` → `SmartAccountSpec`.          |
+| `src/emitter.ts`, `src/rust-policy.ts` | Render spec JSON, summary, and Rust.        |
+| `src/simulate.ts`                      | Dry-run evaluator + scenarios + report.     |
+| `src/demo.ts`, `src/cli.ts`            | Demo orchestration and CLI.                 |
+| `fixtures/recorded-tx.json`            | The committed offline recording.            |
 
 See [docs/architecture.md](docs/architecture.md) for the design in depth.

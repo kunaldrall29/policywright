@@ -64,7 +64,11 @@ function parseNetwork(value: string | undefined): Network {
 
 /** Serialise a RecordedTx to JSON with bigints rendered as decimal strings. */
 function recordedTxToJson(tx: RecordedTx): string {
-  return JSON.stringify(tx, (_key, value) => (typeof value === 'bigint' ? value.toString() : value), 2);
+  return JSON.stringify(
+    tx,
+    (_key: string, value: unknown) => (typeof value === 'bigint' ? value.toString() : value),
+    2,
+  );
 }
 
 function cmdSynth(): void {
@@ -92,10 +96,7 @@ async function cmdRecord(rest: readonly string[]): Promise<void> {
   const flags = parseFlags(rest);
   const network = parseNetwork(flags.get('network'));
   const rpcUrl = flags.get('rpc-url');
-  const tx = await recordFromHash(
-    hash,
-    rpcUrl !== undefined ? { network, rpcUrl } : { network },
-  );
+  const tx = await recordFromHash(hash, rpcUrl !== undefined ? { network, rpcUrl } : { network });
   process.stdout.write(`${recordedTxToJson(tx)}\n`);
 }
 

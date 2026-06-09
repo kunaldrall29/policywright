@@ -31,7 +31,10 @@ function isScoped(spec: SmartAccountSpec, contract: string, fnName: string): boo
   return spec.contextRule.scopedCalls.some((s) => s.contract === contract && s.fnName === fnName);
 }
 
-function spendPolicyFor(spec: SmartAccountSpec, contractId: string): SpendingLimitPolicy | undefined {
+function spendPolicyFor(
+  spec: SmartAccountSpec,
+  contractId: string,
+): SpendingLimitPolicy | undefined {
   return spec.policies.find(
     (p): p is SpendingLimitPolicy =>
       p.kind === 'spending-limit' && p.asset.contractId === contractId,
@@ -41,9 +44,8 @@ function spendPolicyFor(spec: SmartAccountSpec, contractId: string): SpendingLim
 /** Count prior in-scope calls that fall within the trailing frequency window. */
 function callsInWindow(candidate: CandidateCall, windowSecs: number): number {
   const windowStart = candidate.timestamp - windowSecs;
-  return candidate.priorCallTimestamps.filter(
-    (ts) => ts > windowStart && ts <= candidate.timestamp,
-  ).length;
+  return candidate.priorCallTimestamps.filter((ts) => ts > windowStart && ts <= candidate.timestamp)
+    .length;
 }
 
 /** Evaluate one candidate call against the spec. */
@@ -121,7 +123,9 @@ export function buildScenarios(spec: SmartAccountSpec, tx: RecordedTx): Scenario
   if (spendCall === undefined) {
     throw new Error('cannot build scenarios: context rule has no scoped calls');
   }
-  const spendPolicy = spec.policies.find((p): p is SpendingLimitPolicy => p.kind === 'spending-limit');
+  const spendPolicy = spec.policies.find(
+    (p): p is SpendingLimitPolicy => p.kind === 'spending-limit',
+  );
 
   const scenarios: Scenario[] = [];
 
@@ -149,9 +153,7 @@ export function buildScenarios(spec: SmartAccountSpec, tx: RecordedTx): Scenario
         contract: spendCall.contract,
         fnName: spendCall.fnName,
         args: [],
-        outflows: [
-          { asset: spendPolicy.asset, direction: 'out', amount: spendPolicy.cap + 1n },
-        ],
+        outflows: [{ asset: spendPolicy.asset, direction: 'out', amount: spendPolicy.cap + 1n }],
         timestamp: base + 60,
         priorCallTimestamps: [],
       },
@@ -222,7 +224,9 @@ export function renderReport(results: readonly SimulationResult[]): string {
   lines.push('| Scenario | Decision | Reason |');
   lines.push('| --- | --- | --- |');
   for (const r of results) {
-    lines.push(`| ${r.label} | ${icon(r.decision)} ${r.decision} (${r.reasonCode}) | ${r.reason} |`);
+    lines.push(
+      `| ${r.label} | ${icon(r.decision)} ${r.decision} (${r.reasonCode}) | ${r.reason} |`,
+    );
   }
   lines.push('');
   return lines.join('\n');

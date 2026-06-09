@@ -122,13 +122,18 @@ function extractTransfers(contractEventsXdr: xdr.ContractEvent[][]): TransferEve
     if (event.type !== 'contract' || event.contractId === undefined) {
       continue;
     }
-    const [topic0, from, to] = event.topics;
-    if (topic0 !== 'transfer') {
+    // humanizeEvents types topics/data as `any`; treat them as unknown and narrow.
+    const topics = event.topics as unknown[];
+    if (topics[0] !== 'transfer') {
       continue;
     }
+    const from = topics[1];
+    const to = topics[2];
+    const rawAmount = event.data as unknown;
     let amount: bigint;
     try {
-      amount = BigInt(event.data as string | number | bigint);
+      amount =
+        typeof rawAmount === 'bigint' ? rawAmount : BigInt(rawAmount as string | number | boolean);
     } catch {
       // A transfer event with a non-integer payload is malformed; skip it
       // rather than aborting the whole recording.
@@ -192,7 +197,9 @@ export async function recordFromHash(hash: string, options: RecordOptions): Prom
     );
   }
   if (response.status === rpc.Api.GetTransactionStatus.FAILED) {
-    throw new RpcError(`transaction ${hash} failed on-chain; there is no successful flow to record`);
+    throw new RpcError(
+      `transaction ${hash} failed on-chain; there is no successful flow to record`,
+    );
   }
 
   const tx = extractV1Transaction(response.envelopeXdr);

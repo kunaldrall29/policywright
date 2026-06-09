@@ -55,10 +55,10 @@ quantitative limits.
   short derived rule name (OZ caps rule names at 20 chars).
 - **Spending limits** — per asset, sum the **gross outflow** (ignoring inflows) and cap it
   at `gross × capMultiplier` (rounded up so the cap never sits below what was observed).
-  - *Gross, not net:* an asset received then sent within the same flow (BLND: claimed in,
+  - _Gross, not net:_ an asset received then sent within the same flow (BLND: claimed in,
     swapped out) nets to ~zero, but the account still moved the gross amount out, so that
     is what is capped.
-  - *Inflow-only assets get no cap* — the USDC received from the swap moves nothing out, so
+  - _Inflow-only assets get no cap_ — the USDC received from the swap moves nothing out, so
     no spending policy is emitted for it. This is the minimal-permission case.
 - **Frequency** — one frequency-limit policy is always emitted from config.
 - **Policy budget** — OZ allows at most `MAX_POLICIES` (5) policies per context rule;

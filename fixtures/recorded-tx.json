@@ -14,9 +14,21 @@
     "tokenUSDC": "CCTTMGGQKRAV7HB7OQXVHPA6WXCW2KGSOKVAEKAS6P4MVBBG7RHA6JM7"
   },
   "tokens": {
-    "BLND": { "contractId": "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W", "symbol": "BLND", "decimals": 7 },
-    "XLM": { "contractId": "CB3K24WUCQTMHS5QZONR2KP45Q5HCRQRLI6SU5ZSOB6BL6DKS3EBUJWW", "symbol": "XLM", "decimals": 7 },
-    "USDC": { "contractId": "CCTTMGGQKRAV7HB7OQXVHPA6WXCW2KGSOKVAEKAS6P4MVBBG7RHA6JM7", "symbol": "USDC", "decimals": 7 }
+    "BLND": {
+      "contractId": "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W",
+      "symbol": "BLND",
+      "decimals": 7
+    },
+    "XLM": {
+      "contractId": "CB3K24WUCQTMHS5QZONR2KP45Q5HCRQRLI6SU5ZSOB6BL6DKS3EBUJWW",
+      "symbol": "XLM",
+      "decimals": 7
+    },
+    "USDC": {
+      "contractId": "CCTTMGGQKRAV7HB7OQXVHPA6WXCW2KGSOKVAEKAS6P4MVBBG7RHA6JM7",
+      "symbol": "USDC",
+      "decimals": 7
+    }
   },
   "calls": [
     {
@@ -46,17 +58,32 @@
   ],
   "flows": [
     {
-      "asset": { "contractId": "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W", "symbol": "BLND", "decimals": 7, "resolved": true },
+      "asset": {
+        "contractId": "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W",
+        "symbol": "BLND",
+        "decimals": 7,
+        "resolved": true
+      },
       "direction": "in",
       "amount": "12345000000"
     },
     {
-      "asset": { "contractId": "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W", "symbol": "BLND", "decimals": 7, "resolved": true },
+      "asset": {
+        "contractId": "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W",
+        "symbol": "BLND",
+        "decimals": 7,
+        "resolved": true
+      },
       "direction": "out",
       "amount": "12345000000"
     },
     {
-      "asset": { "contractId": "CCTTMGGQKRAV7HB7OQXVHPA6WXCW2KGSOKVAEKAS6P4MVBBG7RHA6JM7", "symbol": "USDC", "decimals": 7, "resolved": true },
+      "asset": {
+        "contractId": "CCTTMGGQKRAV7HB7OQXVHPA6WXCW2KGSOKVAEKAS6P4MVBBG7RHA6JM7",
+        "symbol": "USDC",
+        "decimals": 7,
+        "resolved": true
+      },
       "direction": "in",
       "amount": "493800000"
     }

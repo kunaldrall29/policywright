@@ -13,6 +13,9 @@
     "synth": "tsx src/cli.ts synth",
     "simulate": "tsx src/cli.ts simulate",
     "record": "tsx src/cli.ts record",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json"
   },
@@ -20,8 +23,13 @@
     "@stellar/stellar-sdk": "^15.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/node": "^22.19.20",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^9.1.2",
+    "prettier": "^3.8.4",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.61.0"
   }
 }
