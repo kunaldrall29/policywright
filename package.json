@@ -7,10 +7,12 @@
   "engines": {
     "node": ">=22"
   },
-  "bin": {
-    "policywright": "./src/cli.ts"
-  },
   "scripts": {
+    "demo": "tsx src/demo.ts",
+    "cli": "tsx src/cli.ts",
+    "synth": "tsx src/cli.ts synth",
+    "simulate": "tsx src/cli.ts simulate",
+    "record": "tsx src/cli.ts record",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json"
   },
