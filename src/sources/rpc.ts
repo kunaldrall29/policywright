@@ -18,9 +18,26 @@
  *    it is the event's `from` (out) or `to` (in).
  *  - The "subject" smart account is the transaction's source account. A future
  *    revision could accept it explicitly for contract-account (C...) subjects.
+ *  - Token symbol/decimals are resolved by simulating the token contract's SEP-41
+ *    `symbol()` / `decimals()` getters against the same node. If that fails (the
+ *    token is not a standard SAC/SEP-41 token, or the node rejects the
+ *    simulation), we fall back to a label derived from the contract id and flag
+ *    `resolved: false` rather than presenting a guess as fact.
  */
 
-import { Address, StrKey, humanizeEvents, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
+import {
+  Account,
+  Address,
+  BASE_FEE,
+  Contract,
+  Networks,
+  StrKey,
+  TransactionBuilder,
+  humanizeEvents,
+  rpc,
+  scValToNative,
+  xdr,
+} from '@stellar/stellar-sdk';
 import type { AssetFlow, CallArg, Network, RecordedTx, ScopedCall, TokenRef } from '../types.js';
 
 /** Default public RPC endpoints per network. */
@@ -29,6 +46,19 @@ const RPC_URLS: Record<Network, string> = {
   mainnet: 'https://mainnet.sorobanrpc.com',
   futurenet: 'https://rpc-futurenet.stellar.org',
 };
+
+/** Network passphrases, needed to build the read-only metadata simulations. */
+const NETWORK_PASSPHRASES: Record<Network, string> = {
+  testnet: Networks.TESTNET,
+  mainnet: Networks.PUBLIC,
+  futurenet: Networks.FUTURENET,
+};
+
+/**
+ * A throwaway, all-zero source account for read-only simulations. Simulation
+ * does not verify or charge the source, so this account need not exist.
+ */
+const SIMULATION_SOURCE = StrKey.encodeEd25519PublicKey(Buffer.alloc(32));
 
 /** Raised for any failure fetching or decoding a live transaction. */
 export class RpcError extends Error {
@@ -50,9 +80,9 @@ interface TransferEvent {
 }
 
 /**
- * Best-effort token reference. The initial adapter does not resolve on-chain
- * metadata; it falls back to a label derived from the contract id and the
- * Stellar-default 7 decimals, flagging `resolved: false` so callers can say so.
+ * Fallback token reference used when on-chain metadata cannot be resolved. The
+ * label is derived from the contract id and decimals default to the Stellar
+ * standard (7); `resolved: false` marks it as a best-effort guess.
  */
 function fallbackToken(contractId: string): TokenRef {
   return {
@@ -61,6 +91,59 @@ function fallbackToken(contractId: string): TokenRef {
     decimals: 7,
     resolved: false,
   };
+}
+
+/**
+ * Simulate a no-argument getter on a contract and return the decoded result.
+ * Read-only, so it uses a throwaway source account and never submits anything.
+ */
+async function simulateGetter(
+  server: rpc.Server,
+  contractId: string,
+  method: string,
+  network: Network,
+): Promise<unknown> {
+  const source = new Account(SIMULATION_SOURCE, '0');
+  const tx = new TransactionBuilder(source, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASES[network],
+  })
+    .addOperation(new Contract(contractId).call(method))
+    .setTimeout(30)
+    .build();
+
+  const sim = await server.simulateTransaction(tx);
+  if (rpc.Api.isSimulationError(sim)) {
+    throw new RpcError(`simulating ${method}() on ${contractId} failed: ${sim.error}`);
+  }
+  if (sim.result === undefined) {
+    throw new RpcError(`simulating ${method}() on ${contractId} returned no value`);
+  }
+  return scValToNative(sim.result.retval);
+}
+
+/**
+ * Resolve a token's symbol/decimals from its SEP-41 metadata via simulation.
+ * Falls back (with `resolved: false`) on any failure rather than throwing, so a
+ * single non-standard token cannot abort an otherwise valid recording.
+ */
+async function resolveToken(
+  server: rpc.Server,
+  contractId: string,
+  network: Network,
+): Promise<TokenRef> {
+  try {
+    const [symbol, decimals] = await Promise.all([
+      simulateGetter(server, contractId, 'symbol', network),
+      simulateGetter(server, contractId, 'decimals', network),
+    ]);
+    if (typeof symbol === 'string' && typeof decimals === 'number' && Number.isInteger(decimals)) {
+      return { contractId, symbol, decimals, resolved: true };
+    }
+    return fallbackToken(contractId);
+  } catch {
+    return fallbackToken(contractId);
+  }
 }
 
 /** Decode the source account of a v1 transaction to a strkey, when ed25519. */
@@ -149,23 +232,37 @@ function extractTransfers(contractEventsXdr: xdr.ContractEvent[][]): TransferEve
   return transfers;
 }
 
-/** Turn transfer events into directional flows relative to the subject account. */
-function deriveFlows(transfers: readonly TransferEvent[], subject: string | null): AssetFlow[] {
+/**
+ * Turn transfer events into directional flows relative to the subject account,
+ * resolving each distinct token's metadata once (cached) via {@link resolveToken}.
+ */
+async function deriveFlows(
+  server: rpc.Server,
+  transfers: readonly TransferEvent[],
+  subject: string | null,
+  network: Network,
+): Promise<AssetFlow[]> {
+  const tokenCache = new Map<string, TokenRef>();
   const flows: AssetFlow[] = [];
   for (const t of transfers) {
-    if (t.amount === 0n) {
+    if (t.amount === 0n || subject === null) {
       continue;
     }
     let direction: AssetFlow['direction'] | null = null;
-    if (subject !== null && t.to === subject) {
+    if (t.to === subject) {
       direction = 'in';
-    } else if (subject !== null && t.from === subject) {
+    } else if (t.from === subject) {
       direction = 'out';
     }
     if (direction === null) {
       continue; // internal hop (neither leg touches the subject account)
     }
-    flows.push({ asset: fallbackToken(t.tokenContractId), direction, amount: t.amount });
+    let asset = tokenCache.get(t.tokenContractId);
+    if (asset === undefined) {
+      asset = await resolveToken(server, t.tokenContractId, network);
+      tokenCache.set(t.tokenContractId, asset);
+    }
+    flows.push({ asset, direction, amount: t.amount });
   }
   return flows;
 }
@@ -210,7 +307,12 @@ export async function recordFromHash(hash: string, options: RecordOptions): Prom
       `transaction ${hash} contains no InvokeContract operations; nothing to synthesize`,
     );
   }
-  const flows = deriveFlows(extractTransfers(response.events.contractEventsXdr), subject);
+  const flows = await deriveFlows(
+    server,
+    extractTransfers(response.events.contractEventsXdr),
+    subject,
+    network,
+  );
 
   return {
     hash,
