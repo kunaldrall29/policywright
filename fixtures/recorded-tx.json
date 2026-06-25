@@ -1,5 +1,5 @@
 {
-  "note": "Illustrative testnet RecordedTx: a Blend pool emissions claim (BLND in) followed by a Soroswap exact-input swap of that BLND into USDC (BLND out, USDC in). Addresses are well-formed but synthetic placeholders, not real deployments. Flow amounts are decimal strings (smallest unit) because JSON has no bigint.",
+  "note": "Illustrative testnet RecordedTx: a Blend pool emissions claim (BLND in) followed by a Soroswap exact-input swap of that BLND into USDC over the direct path [BLND, USDC] (BLND out, USDC in). Addresses are well-formed but synthetic placeholders, not real deployments. tokenXLM is included as a known-but-unobserved token so the dry-run can exercise an unobserved-route (BLND->XLM) case. Flow amounts are decimal strings (smallest unit) because JSON has no bigint.",
   "hash": "3389e9f0f1a32b9c7c1cf3b8a2e5d4c6b7a8901234567890abcdef1234567890a",
   "network": "testnet",
   "source": "fixture",
@@ -48,7 +48,6 @@
         "488000000",
         [
           "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W",
-          "CB3K24WUCQTMHS5QZONR2KP45Q5HCRQRLI6SU5ZSOB6BL6DKS3EBUJWW",
           "CCTTMGGQKRAV7HB7OQXVHPA6WXCW2KGSOKVAEKAS6P4MVBBG7RHA6JM7"
         ],
         "CABJN4UUYDTF6C2G3WQJCWLG4KNQS2EVLCORKPWMIMSKYPU3FVNFCBS2",

@@ -12,10 +12,13 @@
 
 import {
   MAX_POLICIES,
+  type ArgumentConstraintPolicy,
+  type CallArg,
   type ContextRule,
   type FrequencyLimitPolicy,
   type PolicySpec,
   type RecordedTx,
+  type ScopedCall,
   type SmartAccountSpec,
   type SpendingLimitPolicy,
   type SynthConfig,
@@ -125,6 +128,62 @@ function deriveSpendingPolicies(tx: RecordedTx, config: SynthConfig): SpendingLi
   return policies;
 }
 
+/** True when an argument is an array whose every element is a string (addresses). */
+function isAddressVec(arg: CallArg): arg is readonly string[] {
+  return Array.isArray(arg) && arg.length > 0 && arg.every((e) => typeof e === 'string');
+}
+
+/** The index + values of a swap call's `path` argument, if present. */
+function findPathArg(call: ScopedCall): { argIndex: number; tokens: readonly string[] } | null {
+  // We only constrain swap routes; "start with swap path" per the design.
+  if (!call.fnName.includes('swap')) {
+    return null;
+  }
+  const argIndex = call.args.findIndex(isAddressVec);
+  if (argIndex === -1) {
+    return null;
+  }
+  return { argIndex, tokens: call.args[argIndex] as readonly string[] };
+}
+
+/**
+ * Derive argument-constraint observations from the recording. Currently this
+ * pins the set of token addresses a swap `path` may touch to those observed, so
+ * a candidate routing through an unobserved token can be flagged or denied.
+ *
+ * These are always returned (as observations); the caller decides whether to
+ * enforce them based on {@link SynthConfig.constrainArguments}.
+ */
+function deriveArgumentScopes(tx: RecordedTx): ArgumentConstraintPolicy[] {
+  const byKey = new Map<string, { policy: ArgumentConstraintPolicy; tokens: Set<string> }>();
+  for (const call of tx.calls) {
+    const path = findPathArg(call);
+    if (path === null) {
+      continue;
+    }
+    const key = `${call.contract}::${call.fnName}::${path.argIndex}`;
+    let entry = byKey.get(key);
+    if (entry === undefined) {
+      entry = {
+        tokens: new Set<string>(),
+        policy: {
+          kind: 'argument-constraint',
+          contract: call.contract,
+          fnName: call.fnName,
+          argIndex: path.argIndex,
+          argName: 'path',
+          allowedTokens: [],
+        },
+      };
+      byKey.set(key, entry);
+    }
+    for (const token of path.tokens) {
+      entry.tokens.add(token);
+    }
+  }
+  return [...byKey.values()].map((e) => ({ ...e.policy, allowedTokens: [...e.tokens] }));
+}
+
 /** The frequency-limit policy is always emitted from config. */
 function deriveFrequencyPolicy(config: SynthConfig): FrequencyLimitPolicy {
   return {
@@ -157,9 +216,12 @@ export function synthesize(tx: RecordedTx, config: SynthConfig, now: number): Sm
     validUntil: now + config.lifetimeSecs,
   };
 
+  const argumentScopes = deriveArgumentScopes(tx);
   const policies: PolicySpec[] = [
     ...deriveSpendingPolicies(tx, config),
     deriveFrequencyPolicy(config),
+    // Argument constraints are enforced (count as policies) only when enabled.
+    ...(config.constrainArguments ? argumentScopes : []),
   ];
 
   const warnings: string[] = [];
@@ -169,5 +231,5 @@ export function synthesize(tx: RecordedTx, config: SynthConfig, now: number): Sm
     );
   }
 
-  return { contextRule, policies, warnings, config };
+  return { contextRule, policies, argumentScopes, warnings, config };
 }

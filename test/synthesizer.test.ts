@@ -138,6 +138,46 @@ describe('synthesize — frequency and warnings', () => {
   });
 });
 
+describe('synthesize — argument scopes', () => {
+  const router = contractId('router');
+  const blnd = contractId('blnd');
+  const usdc = contractId('usdc');
+  const swapTx = makeTx({
+    calls: [
+      call(router, 'swap_exact_tokens_for_tokens', [1000n, 900n, [blnd, usdc], router, 9_999n]),
+    ],
+    flows: [flow(token(blnd, 'BLND'), 'out', 1000n)],
+  });
+
+  it('always derives the observed path token set as an argument scope', () => {
+    const spec = synthesize(swapTx, DEFAULT_SYNTH_CONFIG, NOW);
+    expect(spec.argumentScopes).toHaveLength(1);
+    const [scope] = spec.argumentScopes;
+    expect(scope?.argName).toBe('path');
+    expect(scope?.argIndex).toBe(2);
+    expect(scope?.allowedTokens).toEqual([blnd, usdc]);
+  });
+
+  it('does not enforce the scope as a policy when constrainArguments is off', () => {
+    const spec = synthesize(swapTx, { ...DEFAULT_SYNTH_CONFIG, constrainArguments: false }, NOW);
+    expect(spec.policies.some((p) => p.kind === 'argument-constraint')).toBe(false);
+  });
+
+  it('enforces the scope as a policy when constrainArguments is on', () => {
+    const spec = synthesize(swapTx, { ...DEFAULT_SYNTH_CONFIG, constrainArguments: true }, NOW);
+    expect(spec.policies.some((p) => p.kind === 'argument-constraint')).toBe(true);
+  });
+
+  it('ignores non-swap calls and array-of-non-strings args', () => {
+    const tx = makeTx({
+      // claim has a Vec<u32> reserve-ids arg, which must not be treated as a path.
+      calls: [call(contractId('pool'), 'claim', [contractId('a'), [3], contractId('a')])],
+    });
+    const spec = synthesize(tx, DEFAULT_SYNTH_CONFIG, NOW);
+    expect(spec.argumentScopes).toHaveLength(0);
+  });
+});
+
 describe('synthesize — validation', () => {
   it('rejects an empty recording', () => {
     expect(() => synthesize(makeTx(), DEFAULT_SYNTH_CONFIG, NOW)).toThrow(SynthError);

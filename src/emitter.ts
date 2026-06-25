@@ -59,6 +59,8 @@ export function specToJson(spec: SmartAccountSpec): string {
     {
       contextRule: spec.contextRule,
       policies: spec.policies.map(serialisePolicy),
+      argumentScopes: spec.argumentScopes.map(serialisePolicy),
+      argumentScopesEnforced: spec.config.constrainArguments,
       warnings: spec.warnings,
       config: spec.config,
     },
@@ -114,6 +116,15 @@ export function renderSummary(tx: RecordedTx, spec: SmartAccountSpec): string {
   lines.push('--------');
   for (const policy of spec.policies) {
     lines.push(`  - ${describePolicy(policy)}`);
+  }
+  if (spec.argumentScopes.length > 0) {
+    const mode = spec.config.constrainArguments ? 'ENFORCED (deny)' : 'advisory (flag only)';
+    lines.push('');
+    lines.push(`Argument scopes — ${mode}`);
+    lines.push('--------------');
+    for (const scope of spec.argumentScopes) {
+      lines.push(`  - ${describePolicy(scope)}`);
+    }
   }
   if (spec.warnings.length > 0) {
     lines.push('');

@@ -194,6 +194,14 @@ export interface ContextRule {
 export interface SmartAccountSpec {
   readonly contextRule: ContextRule;
   readonly policies: readonly PolicySpec[];
+  /**
+   * Argument constraints observed from the recording (e.g. the swap `path`
+   * token set), always populated when an argument worth constraining is found.
+   * They are also added to {@link policies} (and thus enforced as denials) only
+   * when {@link SynthConfig.constrainArguments} is enabled; otherwise they are
+   * advisory and the simulator flags — rather than denies — violations.
+   */
+  readonly argumentScopes: readonly ArgumentConstraintPolicy[];
   /** Non-fatal advisories surfaced to the user (e.g. policy-count over the cap). */
   readonly warnings: readonly string[];
   /** The config the spec was synthesised with (echoed for reproducibility). */

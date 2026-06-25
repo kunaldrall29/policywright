@@ -13,6 +13,8 @@
 
 import { formatAmount } from './emitter.js';
 import type {
+  ArgumentConstraintPolicy,
+  CallArg,
   CandidateCall,
   RecordedTx,
   SimulationResult,
@@ -39,6 +41,24 @@ function spendPolicyFor(
     (p): p is SpendingLimitPolicy =>
       p.kind === 'spending-limit' && p.asset.contractId === contractId,
   );
+}
+
+/**
+ * Return the candidate's argument tokens that fall outside an argument scope's
+ * allow-set, or null when the candidate has no array argument at that index to
+ * evaluate.
+ */
+function disallowedArgTokens(
+  candidate: CandidateCall,
+  scope: ArgumentConstraintPolicy,
+): string[] | null {
+  const arg: CallArg | undefined = candidate.args[scope.argIndex];
+  if (!Array.isArray(arg)) {
+    return null;
+  }
+  const allowed = new Set(scope.allowedTokens);
+  const disallowed = arg.filter((t): t is string => typeof t === 'string' && !allowed.has(t));
+  return disallowed.length > 0 ? disallowed : null;
 }
 
 /** Count prior in-scope calls that fall within the trailing frequency window. */
@@ -70,7 +90,23 @@ export function simulateCall(spec: SmartAccountSpec, candidate: CandidateCall): 
     };
   }
 
-  // 3. Spending limits (per outflow asset that has a cap).
+  // 3. Enforced argument constraints (deny routing through unobserved tokens).
+  for (const policy of spec.policies) {
+    if (policy.kind !== 'argument-constraint') {
+      continue;
+    }
+    const bad = disallowedArgTokens(candidate, policy);
+    if (bad !== null) {
+      return {
+        label: candidate.label,
+        decision: 'deny',
+        reasonCode: 'argument-constraint',
+        reason: `${policy.fnName} ${policy.argName} routes through unobserved token(s) ${bad.join(', ')}`,
+      };
+    }
+  }
+
+  // 4. Spending limits (per outflow asset that has a cap).
   for (const outflow of candidate.outflows) {
     if (outflow.direction !== 'out') {
       continue;
@@ -88,7 +124,7 @@ export function simulateCall(spec: SmartAccountSpec, candidate: CandidateCall): 
     }
   }
 
-  // 4. Frequency limit.
+  // 5. Frequency limit.
   const frequency = spec.policies.find((p) => p.kind === 'frequency-limit');
   if (frequency !== undefined) {
     const prior = callsInWindow(candidate, frequency.windowSecs);
@@ -102,11 +138,27 @@ export function simulateCall(spec: SmartAccountSpec, candidate: CandidateCall): 
     }
   }
 
+  // 6. Advisory argument constraints (flag, not deny) when not enforced.
+  const argEnforced = spec.policies.some((p) => p.kind === 'argument-constraint');
+  if (!argEnforced) {
+    for (const scope of spec.argumentScopes) {
+      const bad = disallowedArgTokens(candidate, scope);
+      if (bad !== null) {
+        return {
+          label: candidate.label,
+          decision: 'flag',
+          reasonCode: 'argument-constraint',
+          reason: `${scope.fnName} ${scope.argName} routes through unobserved token(s) ${bad.join(', ')}; not enforced (constrainArguments is off)`,
+        };
+      }
+    }
+  }
+
   return {
     label: candidate.label,
     decision: 'permit',
     reasonCode: 'permit',
-    reason: 'within scope, lifetime, spend cap, and frequency limit',
+    reason: 'within scope, lifetime, argument, spend cap, and frequency limits',
   };
 }
 
@@ -208,6 +260,29 @@ export function buildScenarios(spec: SmartAccountSpec, tx: RecordedTx): Scenario
       },
       expectedDecision: 'deny',
       expectedReasonCode: 'frequency-limit',
+    });
+  }
+
+  // argument scope: a swap routing through an unobserved token. Denied when
+  // constrainArguments is enabled, flagged (advisory) when it is not.
+  const argScope = spec.argumentScopes[0];
+  if (argScope !== undefined) {
+    const unobservedToken = `C${'Z'.repeat(55)}`;
+    const allowed = argScope.allowedTokens[0] ?? unobservedToken;
+    const args: CallArg[] = Array.from({ length: argScope.argIndex }, () => null);
+    args.push([allowed, unobservedToken]);
+    scenarios.push({
+      candidate: {
+        label: 'route through an unobserved token',
+        contract: argScope.contract,
+        fnName: argScope.fnName,
+        args,
+        outflows: [],
+        timestamp: base + 60,
+        priorCallTimestamps: [],
+      },
+      expectedDecision: spec.config.constrainArguments ? 'deny' : 'flag',
+      expectedReasonCode: 'argument-constraint',
     });
   }
 

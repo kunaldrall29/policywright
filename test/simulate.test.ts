@@ -116,6 +116,58 @@ describe('buildScenarios', () => {
   });
 });
 
+describe('simulateCall — argument scopes', () => {
+  const USDC = token(contractId('usdc'), 'USDC');
+  const XLM = contractId('xlm');
+  const swapTx = makeTx({
+    calls: [
+      call(ROUTER, 'swap_exact_tokens_for_tokens', [
+        1000n,
+        900n,
+        [BLND.contractId, USDC.contractId],
+        ROUTER,
+        9_999n,
+      ]),
+    ],
+    flows: [flow(BLND, 'out', 1000n)],
+  });
+
+  function specWith(constrainArguments: boolean): SmartAccountSpec {
+    return synthesize(swapTx, { ...DEFAULT_SYNTH_CONFIG, constrainArguments }, NOW);
+  }
+
+  const observedPath = [BLND.contractId, USDC.contractId];
+  const unobservedPath = [BLND.contractId, XLM];
+
+  it('denies an unobserved route when constrainArguments is enabled', () => {
+    const result = simulateCall(
+      specWith(true),
+      candidate({ args: [1000n, 900n, unobservedPath, ROUTER, 9_999n] }),
+    );
+    expect(result.decision).toBe('deny');
+    expect(result.reasonCode).toBe('argument-constraint');
+  });
+
+  it('flags (does not deny) an unobserved route when constrainArguments is disabled', () => {
+    const result = simulateCall(
+      specWith(false),
+      candidate({ args: [1000n, 900n, unobservedPath, ROUTER, 9_999n] }),
+    );
+    expect(result.decision).toBe('flag');
+    expect(result.reasonCode).toBe('argument-constraint');
+  });
+
+  it('permits the observed route in both modes', () => {
+    for (const enforce of [true, false]) {
+      const result = simulateCall(
+        specWith(enforce),
+        candidate({ args: [1000n, 900n, observedPath, ROUTER, 9_999n] }),
+      );
+      expect(result.decision).toBe('permit');
+    }
+  });
+});
+
 describe('renderReport', () => {
   it('renders a Markdown table with an icon per decision', () => {
     const results: SimulationResult[] = [
