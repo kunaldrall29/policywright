@@ -1,5 +1,8 @@
 # policywright
 
+[![CI](https://github.com/kunaldrall29/policywright/actions/workflows/ci.yml/badge.svg)](https://github.com/kunaldrall29/policywright/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
+
 Policywright turns a transaction a user already performed (or simulated) into the
 least-privilege [OpenZeppelin smart-account](https://docs.openzeppelin.com/stellar-contracts/accounts/smart-account)
 authorization that permits exactly that flow — a context rule plus the minimum set of
@@ -57,8 +60,44 @@ any scenario deviates, so it doubles as a smoke test. It needs no network access
 
 The live `record` path is optional and not exercised by the demo or tests. Given a valid
 transaction hash within the RPC node's retention window, it decodes the `InvokeContract`
-calls and SEP-41 transfer events into a `RecordedTx`. Not-found, failed, and decode
-failures return clear, actionable errors.
+calls and SEP-41 transfer events into a `RecordedTx`, resolving each token's symbol/
+decimals from its SAC metadata (with an explicit `resolved: false` fallback when that is
+not possible). Not-found, failed, wrong-network, and decode failures return clear,
+actionable errors.
+
+## Configuration
+
+`synth` and `simulate` accept overrides for the synthesis knobs; anything omitted keeps
+its default.
+
+| Flag                        | Default         | Meaning                                           |
+| --------------------------- | --------------- | ------------------------------------------------- |
+| `--lifetime <secs>`         | `2592000` (30d) | Context-rule lifetime (sets `valid_until`).       |
+| `--spend-window <secs>`     | `86400` (1d)    | Rolling window the spend cap is measured over.    |
+| `--cap-multiplier <number>` | `1.1`           | Cap = observed gross outflow × this (rounded up). |
+| `--frequency-window <secs>` | `86400` (1d)    | Rolling window for the frequency limit.           |
+| `--frequency-max <count>`   | `5`             | Max calls allowed within the frequency window.    |
+| `--constrain-arguments`     | off             | Enforce the swap-path token set (see below).      |
+
+```bash
+npm run cli -- synth --lifetime 604800 --cap-multiplier 1.25
+npm run cli -- simulate --constrain-arguments
+```
+
+## Argument-level scope (`--constrain-arguments`)
+
+The synthesizer always records the set of token addresses a swap `path` touched (surfaced
+as `argumentScopes` in the spec). What that observation does depends on the flag:
+
+- **Off (default):** the prior behaviour is preserved — a candidate swap routing through a
+  token never observed is **flagged** (advisory), not denied.
+- **On:** the observation becomes an enforced policy — the same swap is **denied** (the
+  `BLND -> XLM` case in the demo).
+
+**Limits.** This constrains the _set of tokens the path may touch_, not the ordering,
+intermediate-hop count, or amounts. A multi-hop route through only-observed tokens is
+allowed; amount bounds are the spending-limit policy's job. It currently covers the swap
+`path` argument only.
 
 ## The generated Rust policy is illustrative
 
@@ -69,10 +108,17 @@ deployed as-is** — every generated file is stamped with that warning.
 
 ## Development
 
-```bash
-npm run typecheck   # tsc --noEmit
-npm run build       # emit dist/ (tsconfig.build.json)
-```
+| Script                                    | Purpose                                                      |
+| ----------------------------------------- | ------------------------------------------------------------ |
+| `npm test`                                | Run the Vitest suite.                                        |
+| `npm run test:coverage`                   | Run tests with coverage (synthesizer + simulator held ≥90%). |
+| `npm run lint`                            | ESLint (typescript-eslint, type-checked rules).              |
+| `npm run format:check` / `npm run format` | Check / apply Prettier.                                      |
+| `npm run typecheck`                       | `tsc --noEmit`.                                              |
+| `npm run build`                           | Emit `dist/` (`tsconfig.build.json`).                        |
+
+CI runs `npm ci` then lint → format:check → typecheck → test → demo on every push to
+`main` and on pull requests ([ci.yml](.github/workflows/ci.yml)).
 
 ## Project layout
 
@@ -88,3 +134,32 @@ npm run build       # emit dist/ (tsconfig.build.json)
 | `fixtures/recorded-tx.json`            | The committed offline recording.            |
 
 See [docs/architecture.md](docs/architecture.md) for the design in depth.
+
+## Deliverables
+
+This project is built for Stellar SCF #43 ("OZ accounts policy builder"). The table tracks
+deliverables against tranches and their status in this repository.
+
+| Tranche                        | Deliverable                                                                                                                                      | Status     |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| 1 — Spike / PoC                | Recording model, synthesizer (scope + spend caps + frequency), emitter (spec JSON, summary, illustrative Rust), offline dry-run + demo           | ✅ Done    |
+| 2 — Production-grade           | Lint/format gates, Vitest suite + coverage, hardened live RPC adapter (SAC metadata), argument-level scope, configurable synthesis, CI, examples | ✅ Done    |
+| 3 — Future (out of scope here) | Professional audit of the generated Rust policy, on-chain install/sign flow, broader argument constraints, a UI                                  | ⏳ Planned |
+
+## Acknowledgements
+
+policywright extends the prior art of **[kalepail/pollywallet](https://github.com/kalepail/pollywallet)**
+by Tyler van der Hoeven — a passkey-secured smart-wallet demo on Stellar that deploys
+OpenZeppelin smart-account contracts on Soroban and submits through an OZ Channels relayer
+(in the lineage of [`passkey-kit`](https://github.com/kalepail/passkey-kit) and the
+WebAuthn smart-wallet work).
+
+Stated plainly:
+
+- **Adopts** — OpenZeppelin's Stellar smart-account model (context rules + policies) and
+  Soroban's account-abstraction primitives that pollywallet demonstrates.
+- **Extends** — pollywallet shows how to _create and operate_ a smart wallet; policywright
+  adds the missing step of _deriving the least-privilege authorization from a transaction
+  the user already performed_, plus an offline dry-run to verify it before installing.
+- **Replaces** — nothing in pollywallet. This is a complementary authoring/verification
+  tool, not a wallet; it does not sign, deploy, or relay transactions.

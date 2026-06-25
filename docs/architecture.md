@@ -40,10 +40,14 @@ Produces a `RecordedTx`: the transaction hash/network, the ordered `ScopedCall`s
   - token movements come from SEP-41 / Stellar-Asset-Contract `transfer` contract events
     (`topics = [Symbol("transfer"), from, to, …]`, `data = i128 amount`), attributed to
     the subject account when it is the `from` (out) or `to` (in);
-  - the subject smart account is the transaction's source account.
+  - the subject smart account is the transaction's source account;
+  - each token's symbol/decimals are resolved by simulating its SEP-41 `symbol()` /
+    `decimals()` getters against the same node, cached per token. A token that is not a
+    standard SAC/SEP-41 token (or a node that rejects the simulation) falls back to a
+    contract-id-derived label with `resolved: false` — never a silent guess.
 
-  Failure modes (not found, failed on-chain, no contract calls, malformed envelope) return
-  a clear `RpcError` rather than a silent empty result.
+  Failure modes (not found, failed on-chain, wrong network, no contract calls, malformed
+  envelope) return a clear `RpcError` rather than a silent empty result.
 
 ### 2. Synthesis (`src/synthesizer.ts`)
 
@@ -61,10 +65,16 @@ quantitative limits.
   - _Inflow-only assets get no cap_ — the USDC received from the swap moves nothing out, so
     no spending policy is emitted for it. This is the minimal-permission case.
 - **Frequency** — one frequency-limit policy is always emitted from config.
+- **Argument scope** — the set of token addresses a swap `path` touched is always recorded
+  on the spec as `argumentScopes`. When `config.constrainArguments` is enabled it is also
+  added to `policies` (and thus enforced as a denial); otherwise it is advisory and the
+  simulator only flags violations. It constrains the token _set_, not ordering/hops/amounts
+  (see the README for limits).
 - **Policy budget** — OZ allows at most `MAX_POLICIES` (5) policies per context rule;
   exceeding that adds a warning to the spec rather than failing.
 
-`SynthConfig` is validated up front and echoed into the spec for reproducibility.
+`SynthConfig` is validated up front and echoed into the spec for reproducibility. All of
+the above knobs are exposed as CLI flags on `synth`/`simulate`.
 
 ### 3. Emission (`src/emitter.ts`, `src/rust-policy.ts`)
 
@@ -85,11 +95,16 @@ failure decides the outcome:
 
 1. **scope** — is the `(contract, fn)` pair authorised? (deny: unseen function)
 2. **lifetime** — is the call within the rule's validity window? (deny: expired)
-3. **spending-limit** — does any outflow exceed its asset's cap? (deny: over-cap)
-4. **frequency-limit** — would this call exceed the rolling call cap? (deny: too frequent)
+3. **argument-constraint** (enforced) — does the swap route through an unobserved token?
+   (deny — only when `constrainArguments` is enabled)
+4. **spending-limit** — does any outflow exceed its asset's cap? (deny: over-cap)
+5. **frequency-limit** — would this call exceed the rolling call cap? (deny: too frequent)
+6. **argument-constraint** (advisory) — when not enforced, an unobserved route is **flagged**
+   rather than permitted silently.
 
 If every check passes the call is permitted. `buildScenarios` derives the standard
-permit/deny set generically from a spec, and `renderReport` formats results as Markdown.
+permit/deny/flag set generically from a spec, and `renderReport` formats results as
+Markdown.
 
 ## Design choices
 
