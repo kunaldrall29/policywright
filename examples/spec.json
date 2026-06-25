@@ -1,0 +1,58 @@
+{
+  "contextRule": {
+    "name": "pw:claim+swap",
+    "scopedCalls": [
+      {
+        "contract": "CCFZSK3W5W54JT2QPLBDDQ5W4JEIVBG3PUFONKE5YOMS52L6GQIPIV4V",
+        "fnName": "claim"
+      },
+      {
+        "contract": "CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7",
+        "fnName": "swap_exact_tokens_for_tokens"
+      }
+    ],
+    "validUntil": 1751414400
+  },
+  "policies": [
+    {
+      "kind": "spending-limit",
+      "asset": {
+        "contractId": "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W",
+        "symbol": "BLND",
+        "decimals": 7,
+        "resolved": true
+      },
+      "cap": "13579500000",
+      "windowSecs": 86400,
+      "observedGrossOut": "12345000000"
+    },
+    {
+      "kind": "frequency-limit",
+      "windowSecs": 86400,
+      "maxCalls": 5
+    }
+  ],
+  "argumentScopes": [
+    {
+      "kind": "argument-constraint",
+      "contract": "CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7",
+      "fnName": "swap_exact_tokens_for_tokens",
+      "argIndex": 2,
+      "argName": "path",
+      "allowedTokens": [
+        "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W",
+        "CCTTMGGQKRAV7HB7OQXVHPA6WXCW2KGSOKVAEKAS6P4MVBBG7RHA6JM7"
+      ]
+    }
+  ],
+  "argumentScopesEnforced": false,
+  "warnings": [],
+  "config": {
+    "lifetimeSecs": 2592000,
+    "spendWindowSecs": 86400,
+    "capMultiplier": 1.1,
+    "frequencyWindowSecs": 86400,
+    "frequencyMaxCalls": 5,
+    "constrainArguments": false
+  }
+}

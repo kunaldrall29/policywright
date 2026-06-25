@@ -1,0 +1,33 @@
+policywright — synthesized smart-account authorization
+======================================================
+
+Source tx : 3389e9f0f1a32b9c7c1cf3b8a2e5d4c6b7a8901234567890abcdef1234567890a
+Network   : testnet (recorded from fixture)
+
+Observed flow
+-------------
+  call claim @ CCFZSK3W5W54JT2QPLBDDQ5W4JEIVBG3PUFONKE5YOMS52L6GQIPIV4V
+  call swap_exact_tokens_for_tokens @ CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7
+  in   1234.5 BLND
+  out  1234.5 BLND
+  in   49.38 USDC
+
+Context rule
+------------
+  name        : pw:claim+swap
+  valid until : 1751414400 (unix)
+  scope       :
+    - claim @ CCFZSK3W5W54JT2QPLBDDQ5W4JEIVBG3PUFONKE5YOMS52L6GQIPIV4V
+    - swap_exact_tokens_for_tokens @ CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7
+
+Policies (2)
+--------
+  - spending-limit: BLND <= 1357.95 per 86400s (observed gross out 1234.5)
+  - frequency-limit: <= 5 call(s) per 86400s
+
+Argument scopes — advisory (flag only)
+--------------
+  - argument-constraint: swap_exact_tokens_for_tokens arg[2] (path) restricted to 2 observed token(s)
+
+Note: the generated FrequencyLimitPolicy Rust is ILLUSTRATIVE and
+UNAUDITED — a starting point, not deploy-ready code.
