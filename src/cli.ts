@@ -6,8 +6,8 @@
  *   simulate             run the dry-run scenarios against the fixture's spec
  *   record <hash>        fetch a live transaction by hash and print the recording
  *
- * Synthesis configuration flags are added in a later change; today synth and
- * simulate use the documented defaults.
+ * synth and simulate accept SynthConfig overrides as flags (see USAGE); any
+ * flag left out keeps its documented default from DEFAULT_SYNTH_CONFIG.
  */
 
 import { emit } from './emitter.js';
@@ -16,15 +16,25 @@ import { loadFixture } from './sources/fixture.js';
 import { recordFromHash } from './sources/rpc.js';
 import { buildScenarios, renderReport, simulateCall } from './simulate.js';
 import { synthesize } from './synthesizer.js';
-import { DEFAULT_SYNTH_CONFIG, type Network, type RecordedTx } from './types.js';
+import { DEFAULT_SYNTH_CONFIG, type Network, type RecordedTx, type SynthConfig } from './types.js';
+
+const D = DEFAULT_SYNTH_CONFIG;
 
 const USAGE = `policywright — synthesize a least-privilege smart-account authorization
 
 Usage:
   npm run demo                          end-to-end demo + dry-run self-check
-  npm run cli -- synth                  synthesize from the baked-in fixture
-  npm run cli -- simulate               dry-run scenarios against the spec
+  npm run cli -- synth     [synth-flags] synthesize from the baked-in fixture
+  npm run cli -- simulate  [synth-flags] dry-run scenarios against the spec
   npm run record -- <txHash> [--network testnet|mainnet|futurenet]
+
+Synthesis flags (defaults in parentheses):
+  --lifetime <secs>          context-rule lifetime (${D.lifetimeSecs})
+  --spend-window <secs>      spend-cap rolling window (${D.spendWindowSecs})
+  --cap-multiplier <number>  cap = observed gross out * this (${D.capMultiplier})
+  --frequency-window <secs>  frequency rolling window (${D.frequencyWindowSecs})
+  --frequency-max <count>    max calls per frequency window (${D.frequencyMaxCalls})
+  --constrain-arguments      enforce swap-path token set (default off: flag only)
 
 Networks default to testnet.`;
 
@@ -52,6 +62,40 @@ function parseFlags(args: readonly string[]): Map<string, string> {
   return flags;
 }
 
+/** Parse a flag as a finite number, throwing a clear error otherwise. */
+function numberFlag(flags: Map<string, string>, key: string, fallback: number): number {
+  const raw = flags.get(key);
+  if (raw === undefined) {
+    return fallback;
+  }
+  const value = Number(raw);
+  if (!Number.isFinite(value)) {
+    throw new Error(`--${key} must be a number, got "${raw}"`);
+  }
+  return value;
+}
+
+/** A boolean flag is true when present unless explicitly set to "false". */
+function boolFlag(flags: Map<string, string>, key: string, fallback: boolean): boolean {
+  const raw = flags.get(key);
+  if (raw === undefined) {
+    return fallback;
+  }
+  return raw !== 'false';
+}
+
+/** Build a SynthConfig from flags, overriding documented defaults. */
+function parseSynthConfig(flags: Map<string, string>): SynthConfig {
+  return {
+    lifetimeSecs: numberFlag(flags, 'lifetime', D.lifetimeSecs),
+    spendWindowSecs: numberFlag(flags, 'spend-window', D.spendWindowSecs),
+    capMultiplier: numberFlag(flags, 'cap-multiplier', D.capMultiplier),
+    frequencyWindowSecs: numberFlag(flags, 'frequency-window', D.frequencyWindowSecs),
+    frequencyMaxCalls: numberFlag(flags, 'frequency-max', D.frequencyMaxCalls),
+    constrainArguments: boolFlag(flags, 'constrain-arguments', D.constrainArguments),
+  };
+}
+
 function parseNetwork(value: string | undefined): Network {
   if (value === undefined) {
     return 'testnet';
@@ -71,18 +115,18 @@ function recordedTxToJson(tx: RecordedTx): string {
   );
 }
 
-function cmdSynth(): void {
+function cmdSynth(config: SynthConfig): void {
   const tx = loadFixture();
-  const spec = synthesize(tx, DEFAULT_SYNTH_CONFIG, tx.timestamp ?? 0);
+  const spec = synthesize(tx, config, tx.timestamp ?? 0);
   const artifacts = emit(tx, spec);
   process.stdout.write(artifacts.summary);
   process.stdout.write('\n--- spec.json ---\n');
   process.stdout.write(`${artifacts.specJson}\n`);
 }
 
-function cmdSimulate(): void {
+function cmdSimulate(config: SynthConfig): void {
   const tx = loadFixture();
-  const spec = synthesize(tx, DEFAULT_SYNTH_CONFIG, tx.timestamp ?? 0);
+  const spec = synthesize(tx, config, tx.timestamp ?? 0);
   const results = buildScenarios(spec, tx).map((s) => simulateCall(spec, s.candidate));
   process.stdout.write(`${renderReport(results)}\n`);
 }
@@ -107,10 +151,10 @@ async function main(): Promise<void> {
       runDemo();
       return;
     case 'synth':
-      cmdSynth();
+      cmdSynth(parseSynthConfig(parseFlags(rest)));
       return;
     case 'simulate':
-      cmdSimulate();
+      cmdSimulate(parseSynthConfig(parseFlags(rest)));
       return;
     case 'record':
       await cmdRecord(rest);
