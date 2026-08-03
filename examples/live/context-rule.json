@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "policywright",
+  "target": {
+    "package": "stellar-accounts (OpenZeppelin/stellar-contracts)",
+    "version": "v0.7.2",
+    "commit": "a9c42169000638da937577f592ebf61a7a3c94ca",
+    "installEntryPoint": "SmartAccount::add_context_rule(context_type, name, valid_until, signers, policies: Map<Address, Val>) — packages/accounts/src/smart_account/mod.rs:238-248"
+  },
+  "source": {
+    "network": "testnet",
+    "recordedFrom": "rpc",
+    "subject": "CCW6R5ZKEIJJ75YT54TEHMRUYTP4XQGUI6H63EE3W65H4P4FAUICXP3Q",
+    "ledger": 3817770,
+    "sourceHashes": [
+      "2dcff6618ff12fb629700cab627b3870afa3f0dd000becf88b2eb7826d0b2c1b",
+      "acf256a0688e7f9c36520f4fc20cfa924d1b2e593033d85b0e443ce770b2d452"
+    ]
+  },
+  "ledgerTimeBasis": {
+    "estimatedSecsPerLedger": 5,
+    "note": "every *_ledgers and validUntilLedger value was converted from configured seconds at this estimated rate; recompute validUntilLedger from the live ledger head at install"
+  },
+  "contextRules": [
+    {
+      "contextType": {
+        "type": "CallContract",
+        "contract": "CCJUD55AG6W5HAI5LRVNKAE5WDP5XGZBUDS5WNTIVDU7O264UZZE7BRD"
+      },
+      "name": "pw:swap",
+      "validUntilLedger": 4336170,
+      "signers": [],
+      "observedFns": [
+        "swap_exact_tokens_for_tokens"
+      ],
+      "policies": [
+        {
+          "policy": "custom:FrequencyLimitPolicy",
+          "address": null,
+          "installParams": {
+            "window_secs": 86400,
+            "max_calls": 5
+          },
+          "paramsSource": "policywright-generated FrequencyLimitPolicy (contracts/frequency-limit-policy, emitted by src/rust-policy.ts) — FrequencyLimitParams { window_secs: u64, max_calls: u32 }"
+        }
+      ]
+    },
+    {
+      "contextType": {
+        "type": "CallContract",
+        "contract": "CCSLYYVQ575EAPCDOEYGVOI4NVYD2V7RP3F5HRP4LVDUWEJ4HOLVL357"
+      },
+      "name": "pw:harvest",
+      "validUntilLedger": 4336170,
+      "signers": [],
+      "observedFns": [
+        "harvest"
+      ],
+      "policies": [
+        {
+          "policy": "custom:FrequencyLimitPolicy",
+          "address": null,
+          "installParams": {
+            "window_secs": 86400,
+            "max_calls": 5
+          },
+          "paramsSource": "policywright-generated FrequencyLimitPolicy (contracts/frequency-limit-policy, emitted by src/rust-policy.ts) — FrequencyLimitParams { window_secs: u64, max_calls: u32 }"
+        }
+      ]
+    },
+    {
+      "contextType": {
+        "type": "CallContract",
+        "contract": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+      },
+      "name": "pw:xfer:native",
+      "validUntilLedger": 4336170,
+      "signers": [],
+      "observedFns": [
+        "transfer"
+      ],
+      "policies": [
+        {
+          "policy": "stock:spending_limit",
+          "address": null,
+          "installParams": {
+            "spending_limit": "11000000",
+            "period_ledgers": 17280
+          },
+          "paramsSource": "OpenZeppelin/stellar-contracts@v0.7.2 packages/accounts/src/policies/spending_limit.rs:88-94 — SpendingLimitAccountParams { spending_limit: i128, period_ledgers: u32 }; install guards :367-405 (CallContract-only, positive params, AlreadyInstalled)",
+          "derivedFrom": {
+            "asset": {
+              "contractId": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+              "symbol": "native",
+              "decimals": 7,
+              "resolved": true
+            },
+            "observedGrossOut": "10000000",
+            "spendWindowSecs": 86400
+          }
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "spend windows are measured in LEDGERS on-chain: 86400s → 17280 ledgers at an estimated 5s/ledger (spending_limit.rs:88-94; OZ's own DAY_IN_LEDGERS = 17280 = 86400s at this rate).",
+    "spending_limit is asset-blind: it meters whatever transfer amounts pass through its rule, so the metered token is the rule's CallContract target (one instance per token rule).",
+    "valid_until is a LEDGER SEQUENCE, not a Unix time (storage.rs:282; RECONCILIATION row 15): emitted 4336170 = recording ledger 3817770 + 518400 ledgers (2592000s at 5s/ledger). Recompute from the live ledger head at install — the recording ledger is in the past.",
+    "context rules cannot carry function names (matching is contract-level — storage.rs:289-304; RECONCILIATION rows 13-14): observedFns is advisory. Function-level narrowing must live in a policy's enforce; that codegen is Tranche 2 (docs/T2-NOTES.md).",
+    "emitted rules carry no signers: attach the smart account's signer(s) at install. add_context_rule requires at least one signer or policy per rule (mod.rs:20-21), and stock spending_limit::enforce rejects when no signers authenticated (spending_limit.rs:232-234).",
+    "DELTA: no stock policy can express the observed argument constraints (swap path token set); they are advisory in the offline dry run only. Argument-level policy codegen is Tranche 2 (docs/T2-NOTES.md)."
+  ],
+  "config": {
+    "lifetimeSecs": 2592000,
+    "spendWindowSecs": 86400,
+    "capMultiplier": 1.1,
+    "frequencyWindowSecs": 86400,
+    "frequencyMaxCalls": 5,
+    "constrainArguments": false
+  }
+}

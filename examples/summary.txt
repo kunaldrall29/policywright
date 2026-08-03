@@ -1,7 +1,7 @@
 policywright — synthesized smart-account authorization
 ======================================================
 
-Source tx : 3389e9f0f1a32b9c7c1cf3b8a2e5d4c6b7a8901234567890abcdef1234567890a
+Source tx : 3389e9f0f1a32b9c7c1cf3b8a2e5d4c6b7a8901234567890abcdef123456789a
 Network   : testnet (recorded from fixture)
 
 Observed flow
@@ -28,6 +28,18 @@ Policies (2)
 Argument scopes — advisory (flag only)
 --------------
   - argument-constraint: swap_exact_tokens_for_tokens arg[2] (path) restricted to 2 observed token(s)
+
+Installable OZ context rules (2) — see context-rule.json
+----------------------------
+  pw:claim  CallContract(CCFZSK3W5W54JT2QPLBDDQ5W4JEIVBG3PUFONKE5YOMS52L6GQIPIV4V)
+    valid until ledger 2368821; observed fns: claim
+    - custom:FrequencyLimitPolicy { window_secs: 86400, max_calls: 5 }
+  pw:swap  CallContract(CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7)
+    valid until ledger 2368821; observed fns: swap_exact_tokens_for_tokens
+    - custom:FrequencyLimitPolicy { window_secs: 86400, max_calls: 5 }
+
+  5 composition note(s) in context-rule.json (unit conversions,
+  deltas the stock policies cannot express).
 
 Note: the generated FrequencyLimitPolicy Rust is ILLUSTRATIVE and
 UNAUDITED — a starting point, not deploy-ready code.

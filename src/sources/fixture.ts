@@ -88,7 +88,7 @@ function asCallArg(value: unknown): CallArg {
   return value as CallArg;
 }
 
-function requireCall(value: unknown, path: string): ScopedCall {
+function requireCall(value: unknown, path: string, sourceHash: string): ScopedCall {
   if (!isRecord(value)) {
     throw new FixtureError(`expected call object at ${path}`);
   }
@@ -100,6 +100,10 @@ function requireCall(value: unknown, path: string): ScopedCall {
     contract: requireString(value['contract'], `${path}.contract`),
     fnName: requireString(value['fnName'], `${path}.fnName`),
     args: args.map(asCallArg),
+    // The fixture is authored as a single already-normalised transaction, so
+    // every call shares the document's hash and carries no authorization tree.
+    sourceHash,
+    authorizations: [],
   };
 }
 
@@ -136,14 +140,21 @@ export function parseRecordedTx(doc: unknown): RecordedTx {
   }
   const ledger = doc['ledger'];
   const timestamp = doc['timestamp'];
+  const hash = requireString(doc['hash'], '.hash');
+  // The fixture documents its subject under addresses.smartAccount; absence is
+  // tolerated (subject stays null) so hand-authored fixtures need not add it.
+  const addresses = doc['addresses'];
+  const smartAccount = isRecord(addresses) ? addresses['smartAccount'] : undefined;
   return {
-    hash: requireString(doc['hash'], '.hash'),
+    hash,
     network: requireNetwork(doc['network'], '.network'),
     source: 'fixture',
     ledger: typeof ledger === 'number' ? ledger : null,
     timestamp: typeof timestamp === 'number' ? timestamp : null,
-    calls: calls.map((c, i) => requireCall(c, `.calls[${i}]`)),
+    subject: typeof smartAccount === 'string' ? smartAccount : null,
+    calls: calls.map((c, i) => requireCall(c, `.calls[${i}]`, hash)),
     flows: flows.map((f, i) => requireFlow(f, `.flows[${i}]`)),
+    warnings: [],
   };
 }
 

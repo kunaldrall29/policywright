@@ -4,12 +4,18 @@ node_modules/
 # Build / generated output
 dist/
 out/
+contracts/target/
+contracts/**/test_snapshots/
 
 # Secrets / local env
 .env
 .env.*
 !.env.example
 
+# stellar-cli local state (contract-id aliases written by deploy --alias)
+.stellar/
+
 # Editor / OS noise
 *.log
 .DS_Store
+._*

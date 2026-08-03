@@ -1,0 +1,20 @@
+---
+/**
+ * Page status badge. Every docs page renders one of:
+ * Shipped (exists in this repo, verifiable) / In development / Planned.
+ */
+interface Props {
+  status: 'shipped' | 'in-development' | 'planned';
+}
+const { status } = Astro.props;
+const labels = {
+  shipped: 'Shipped',
+  'in-development': 'In development',
+  planned: 'Planned',
+} as const;
+---
+
+<p class={`pw-status pw-status--${status}`}>
+  <span class="pw-status-dot" aria-hidden="true"></span>
+  Status: {labels[status]}
+</p>

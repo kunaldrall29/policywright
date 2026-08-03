@@ -1,0 +1,55 @@
+---
+title: "Design principle: compose-first"
+description: Configure stock OpenZeppelin policies before ever generating fresh Rust — permanently.
+---
+
+import StatusBadge from '../../../components/StatusBadge.astro';
+
+<StatusBadge status="shipped" />
+
+Policywright's design rule: **the synthesizer configures stock OpenZeppelin
+policies before ever generating fresh Rust.** New policy code is generated only
+where no stock policy can express the constraint. This is the permanent
+default, not a v0 shortcut. The stock building block v0 configures today is
+`spending_limit`; the stock threshold policies — `simple_threshold` and
+`weighted_threshold` — are the planned composition targets for multi-signer
+flows (see [Planned](#planned)).
+
+## Why compose-first is the default permanently
+
+Generated authorization code guards user funds, and every freshly generated
+line is a line nobody has reviewed yet:
+
+- **Stock policies carry their review with them.** OpenZeppelin's building
+  blocks are shared, maintained code. Configuring them means the enforcement
+  logic executing on-chain is the same code everyone else runs and scrutinises
+  — only the parameters are new, and parameters are auditable at a glance.
+- **Fresh codegen multiplies audit surface.** A generator that emits a new
+  contract per delegation produces code no audit has covered. Keeping
+  generation as the rare fallback keeps the unaudited surface small and
+  reviewable.
+- **Parameters are legible to reviewers and wallets.** "Stock `spending_limit`,
+  cap 1357.95 BLND per 24 h" is a statement a wallet, an agent, or a human can
+  check mechanically. Arbitrary generated code is not.
+
+For those reasons the ordering is not a maturity phase to grow out of: even
+with a hardened generator, composing stock policies stays the first choice, and
+generation stays the fallback.
+
+## What v0 does today
+
+- The synthesized **spending limit mirrors OZ's stock `spending_limit`
+  building block**: the spec carries parameters (asset, cap, window), not
+  generated enforcement code
+  ([src/types.ts](https://github.com/kunal-drall/policywright/blob/main/src/types.ts)).
+- The **frequency limit** has no stock counterpart in v0's model, so it is the
+  one policy emitted as fresh Rust — a starting point stamped
+  `ILLUSTRATIVE / UNAUDITED — NOT DEPLOY-READY` on every generated file
+  ([src/rust-policy.ts](https://github.com/kunal-drall/policywright/blob/main/src/rust-policy.ts)).
+
+## Planned
+
+Composition of the stock threshold policies — `simple_threshold` and
+`weighted_threshold` — is planned for when multi-signer flows enter the
+synthesizer's scope; v0's worked example is a single-signer flow and does not
+exercise them. See the [Roadmap](/roadmap/).

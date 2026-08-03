@@ -1,0 +1,70 @@
+---
+title: CLI
+description: Every command and flag that exists in v0, with defaults, from src/cli.ts.
+---
+
+import StatusBadge from '../../../components/StatusBadge.astro';
+
+<StatusBadge status="shipped" />
+
+Everything on this page is implemented in
+[src/cli.ts](https://github.com/kunal-drall/policywright/blob/main/src/cli.ts),
+with defaults defined in
+[src/types.ts](https://github.com/kunal-drall/policywright/blob/main/src/types.ts)
+(`DEFAULT_SYNTH_CONFIG`).
+
+## Commands
+
+| Command                                        | What it does                                                                                                                              |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run demo`                                 | End-to-end pipeline + dry-run self-check (offline). Exits non-zero if a scenario deviates.                                                 |
+| `npm run cli -- synth`                         | Synthesize a spec from the baked-in fixture (or `--input <recorded.json>`) and print the summary + `spec.json` + `context-rule.json`.      |
+| `npm run cli -- simulate`                      | Run the dry-run scenarios against the fixture's spec and print the report.                                                                 |
+| `npm run record -- <txHash> [<txHash> ...]`    | Fetch one or more live transactions by hash and print them merged (ledger-close-time order) as ONE `RecordedTx` JSON.                      |
+| `npm run record -- --from-simulation <file>`   | Ingest a saved `simulateTransaction` exchange instead of fetching hashes (`source: "simulation"`). Cannot be combined with hashes.         |
+| `npm run cli -- help`                          | Print usage (also `--help` / `-h` / no arguments).                                                                                         |
+
+`npm run synth`, `npm run simulate`, and `npm run record` are direct package
+scripts for the corresponding commands
+([package.json](https://github.com/kunal-drall/policywright/blob/main/package.json)).
+
+## Synthesis flags (`synth` and `simulate`)
+
+Anything omitted keeps its default.
+
+| Flag                        | Default         | Meaning                                                        |
+| --------------------------- | --------------- | -------------------------------------------------------------- |
+| `--input <recorded.json>`   | baked-in fixture | **`synth` only.** Synthesize from a saved `record` output (e.g. `examples/live/recorded-claim-swap.json`) instead of the fixture. |
+| `--lifetime <secs>`         | `2592000` (30d) | Context-rule lifetime (sets `valid_until` = synth time + this). |
+| `--spend-window <secs>`     | `86400` (1d)    | Rolling window the spend cap is measured over.                  |
+| `--cap-multiplier <number>` | `1.1`           | Cap = observed gross outflow × this (rounded up).               |
+| `--frequency-window <secs>` | `86400` (1d)    | Rolling window for the frequency limit.                         |
+| `--frequency-max <count>`   | `5`             | Max calls allowed within the frequency window.                  |
+| `--constrain-arguments`     | off             | Enforce the swap-path token set (deny instead of flag).         |
+
+```bash
+npm run cli -- synth --lifetime 604800 --cap-multiplier 1.25
+npm run cli -- simulate --constrain-arguments
+```
+
+## `record` flags
+
+| Flag                       | Default                       | Meaning                                                                                                                                                                     |
+| -------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<txHash> [<txHash> ...]`  | (required unless simulating)  | One or more 64-character hex transaction hashes; a multi-step flow is several hashes (Soroban allows one `InvokeHostFunction` per transaction) merged into one `RecordedTx`. |
+| `--account <G...\|C...>`   | first tx's source account     | The subject account movements are attributed to. Without it the fallback is assumed **with a warning** — smart-account flows usually act through a `C...` address.           |
+| `--from-simulation <file>` | —                             | Ingest a saved `simulateTransaction` exchange instead of fetching hashes.                                                                                                    |
+| `--network <name>`         | `testnet`                     | One of `testnet`, `mainnet`, `futurenet`.                                                                                                                                     |
+| `--rpc-url <url>`          | the network's public endpoint | Override the Soroban RPC endpoint, e.g. a node you run yourself.                                                                                                              |
+
+Default public endpoints per network are defined in
+[src/sources/rpc.ts](https://github.com/kunal-drall/policywright/blob/main/src/sources/rpc.ts).
+
+## Flag syntax and errors
+
+- Flags accept `--key value` or `--key=value`. A boolean flag is true when
+  present unless explicitly set to `false`.
+- Numeric flags reject non-numeric values with a clear message.
+- Every command exits non-zero on error, printing the reason to stderr —
+  including RPC failures (not found, failed on-chain, wrong network, malformed
+  envelope) and invalid synthesis config.

@@ -3,6 +3,9 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['test/**/*.test.ts'],
+    // macOS writes AppleDouble (._*) sidecar files on this volume; they are
+    // not test modules and fail collection if picked up.
+    exclude: ['**/._*', '**/node_modules/**'],
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],

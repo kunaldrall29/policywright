@@ -1,44 +1,49 @@
 /**
- * Live RPC adapter: fetch a transaction by hash from a Soroban RPC node and
- * normalise it into a {@link RecordedTx}.
+ * Live RPC adapter: fetch a transaction SEQUENCE by hash from a Soroban RPC
+ * node and normalise it into one merged {@link RecordedTx}.
  *
- * This is the optional, on-demand counterpart to the offline fixture. The demo
- * and test suite never call it; `npm run record <hash>` does.
+ * Soroban permits a single `InvokeHostFunction` operation per transaction
+ * (FACTS.md §3.2, confirmed against all committed captures), so a multi-step
+ * flow — e.g. a Blend claim followed by a Soroswap swap — is several hashes.
+ * `recordFromHashes` fetches each, decodes it against the protocol-27 shapes
+ * documented in FACTS.md §3 (see decode.ts), and merges them ordered by
+ * ledger close time.
  *
- * Decoding assumptions (Soroban / Protocol 23, @stellar/stellar-sdk v15):
- *  - The transaction is a v1 (or fee-bump-wrapping-v1) envelope. v0 envelopes
- *    predate Soroban and carry no `InvokeHostFunction` operations.
- *  - Contract calls come from `InvokeHostFunction` operations whose host
- *    function is `InvokeContract`; we read the `InvokeContractArgs`
- *    (contract address, function name, args) and decode args with
- *    `scValToNative`.
- *  - Token movements are derived from SEP-41 / Stellar-Asset-Contract `transfer`
- *    contract events: `topics = [Symbol("transfer"), from: Address, to: Address,
- *    ...]`, `data = i128 amount`. We attribute a flow to the smart account when
- *    it is the event's `from` (out) or `to` (in).
- *  - The "subject" smart account is the transaction's source account. A future
- *    revision could accept it explicitly for contract-account (C...) subjects.
- *  - Token symbol/decimals are resolved by simulating the token contract's SEP-41
- *    `symbol()` / `decimals()` getters against the same node. If that fails (the
- *    token is not a standard SAC/SEP-41 token, or the node rejects the
- *    simulation), we fall back to a label derived from the contract id and flag
- *    `resolved: false` rather than presenting a guess as fact.
+ * The subject account movements are attributed to should be passed explicitly
+ * (`--account`): the economic actor of a smart-account flow is often a C…
+ * contract address, NOT the envelope source account (capture 2dcff6…: both
+ * transfer legs name the smart wallet `CCW6R5ZK…` while the tx source
+ * `GBMMOZMK…` appears in no transfer at all). Defaulting to the source
+ * account is supported but recorded as a warning on the output.
+ *
+ * Token symbol/decimals are resolved by simulating the token's SEP-41
+ * `symbol()` / `decimals()` getters against the same node. On failure the
+ * token falls back to its FULL contract id as the symbol (never a sliced
+ * pseudo-symbol) with `resolved: false`, and the recording carries a warning.
+ *
+ * All failures throw a typed {@link RecorderError} — see errors.ts for the
+ * taxonomy. There are no silent catches.
  */
 
 import {
   Account,
-  Address,
   BASE_FEE,
   Contract,
   Networks,
   StrKey,
   TransactionBuilder,
-  humanizeEvents,
   rpc,
   scValToNative,
-  xdr,
 } from '@stellar/stellar-sdk';
-import type { AssetFlow, CallArg, Network, RecordedTx, ScopedCall, TokenRef } from '../types.js';
+import type { Network, RecordedTx, TokenRef } from '../types.js';
+import {
+  assembleRecording,
+  decodeTx,
+  fallbackToken,
+  type DecodedTx,
+  type TokenResolver,
+} from './decode.js';
+import { badInput, networkError, txNotFound } from './errors.js';
 
 /** Default public RPC endpoints per network. */
 const RPC_URLS: Record<Network, string> = {
@@ -60,37 +65,30 @@ const NETWORK_PASSPHRASES: Record<Network, string> = {
  */
 const SIMULATION_SOURCE = StrKey.encodeEd25519PublicKey(Buffer.alloc(32));
 
-/** Raised for any failure fetching or decoding a live transaction. */
-export class RpcError extends Error {
-  override readonly name = 'RpcError';
-}
-
 export interface RecordOptions {
   readonly network: Network;
   /** Override the RPC endpoint (defaults to the network's public node). */
   readonly rpcUrl?: string;
+  /** Account (`G...` or `C...`) movements are attributed to. */
+  readonly account?: string;
 }
 
-/** A `transfer` contract event, narrowed and decoded. */
-interface TransferEvent {
-  readonly tokenContractId: string;
-  readonly from: string | null;
-  readonly to: string | null;
-  readonly amount: bigint;
+/** Validate a subject account string (`G...` or `C...`), or throw BAD_INPUT. */
+export function validateAccount(account: string): string {
+  if (!StrKey.isValidEd25519PublicKey(account) && !StrKey.isValidContract(account)) {
+    throw badInput(
+      `"${account}" is not a valid account: expected an ed25519 public key (G...) or a contract address (C...)`,
+    );
+  }
+  return account;
 }
 
-/**
- * Fallback token reference used when on-chain metadata cannot be resolved. The
- * label is derived from the contract id and decimals default to the Stellar
- * standard (7); `resolved: false` marks it as a best-effort guess.
- */
-function fallbackToken(contractId: string): TokenRef {
-  return {
-    contractId,
-    symbol: `${contractId.slice(0, 4)}…${contractId.slice(-4)}`,
-    decimals: 7,
-    resolved: false,
-  };
+/** Validate a 64-hex transaction hash, or throw BAD_INPUT. */
+export function validateHash(hash: string): string {
+  if (!/^[0-9a-fA-F]{64}$/.test(hash)) {
+    throw badInput(`"${hash}" is not a 64-character hex transaction hash`);
+  }
+  return hash.toLowerCase();
 }
 
 /**
@@ -114,213 +112,137 @@ async function simulateGetter(
 
   const sim = await server.simulateTransaction(tx);
   if (rpc.Api.isSimulationError(sim)) {
-    throw new RpcError(`simulating ${method}() on ${contractId} failed: ${sim.error}`);
+    throw networkError(`simulating ${method}() on ${contractId} failed: ${sim.error}`);
   }
   if (sim.result === undefined) {
-    throw new RpcError(`simulating ${method}() on ${contractId} returned no value`);
+    throw networkError(`simulating ${method}() on ${contractId} returned no value`);
   }
   return scValToNative(sim.result.retval);
 }
 
 /**
- * Resolve a token's symbol/decimals from its SEP-41 metadata via simulation.
- * Falls back (with `resolved: false`) on any failure rather than throwing, so a
- * single non-standard token cannot abort an otherwise valid recording.
+ * Build a {@link TokenResolver} that reads SEP-41 metadata via simulation,
+ * falling back (explicitly, `resolved: false`) on any failure so one
+ * non-standard token cannot abort an otherwise valid recording. The fallback
+ * is surfaced as a warning by the assembler — the catch here is not silent.
  */
-async function resolveToken(
-  server: rpc.Server,
-  contractId: string,
-  network: Network,
-): Promise<TokenRef> {
-  try {
-    const [symbol, decimals] = await Promise.all([
-      simulateGetter(server, contractId, 'symbol', network),
-      simulateGetter(server, contractId, 'decimals', network),
-    ]);
-    if (typeof symbol === 'string' && typeof decimals === 'number' && Number.isInteger(decimals)) {
-      return { contractId, symbol, decimals, resolved: true };
-    }
-    return fallbackToken(contractId);
-  } catch {
-    return fallbackToken(contractId);
-  }
-}
-
-/** Decode the source account of a v1 transaction to a strkey, when ed25519. */
-function sourceAccountAddress(tx: xdr.Transaction): string | null {
-  const muxed = tx.sourceAccount();
-  switch (muxed.switch()) {
-    case xdr.CryptoKeyType.keyTypeEd25519():
-      return StrKey.encodeEd25519PublicKey(Buffer.from(muxed.ed25519()));
-    case xdr.CryptoKeyType.keyTypeMuxedEd25519():
-      return StrKey.encodeEd25519PublicKey(Buffer.from(muxed.med25519().ed25519()));
-    default:
-      return null;
-  }
-}
-
-/** Pull the v1 `Transaction` body out of any envelope variant. */
-function extractV1Transaction(envelope: xdr.TransactionEnvelope): xdr.Transaction {
-  switch (envelope.switch()) {
-    case xdr.EnvelopeType.envelopeTypeTx():
-      return envelope.v1().tx();
-    case xdr.EnvelopeType.envelopeTypeTxFeeBump():
-      return envelope.feeBump().tx().innerTx().v1().tx();
-    case xdr.EnvelopeType.envelopeTypeTxV0():
-      throw new RpcError(
-        'transaction uses a v0 envelope, which predates Soroban and has no contract calls to record',
-      );
-    default:
-      throw new RpcError('unrecognised transaction envelope type');
-  }
-}
-
-/** Extract scoped contract calls from a transaction's InvokeHostFunction ops. */
-function extractCalls(tx: xdr.Transaction): ScopedCall[] {
-  const calls: ScopedCall[] = [];
-  for (const op of tx.operations()) {
-    if (op.body().switch() !== xdr.OperationType.invokeHostFunction()) {
-      continue;
-    }
-    const hostFn = op.body().invokeHostFunctionOp().hostFunction();
-    if (hostFn.switch() !== xdr.HostFunctionType.hostFunctionTypeInvokeContract()) {
-      // createContract / uploadWasm host functions carry no (contract, fn) call.
-      continue;
-    }
-    const invoke = hostFn.invokeContract();
-    const fnNameRaw = invoke.functionName();
-    calls.push({
-      contract: Address.fromScAddress(invoke.contractAddress()).toString(),
-      fnName: typeof fnNameRaw === 'string' ? fnNameRaw : fnNameRaw.toString('utf8'),
-      args: invoke.args().map((scv) => scValToNative(scv) as CallArg),
-    });
-  }
-  return calls;
-}
-
-/** Narrow humanized contract events down to decoded `transfer` events. */
-function extractTransfers(contractEventsXdr: xdr.ContractEvent[][]): TransferEvent[] {
-  const transfers: TransferEvent[] = [];
-  for (const event of humanizeEvents(contractEventsXdr.flat())) {
-    if (event.type !== 'contract' || event.contractId === undefined) {
-      continue;
-    }
-    // humanizeEvents types topics/data as `any`; treat them as unknown and narrow.
-    const topics = event.topics as unknown[];
-    if (topics[0] !== 'transfer') {
-      continue;
-    }
-    const from = topics[1];
-    const to = topics[2];
-    const rawAmount = event.data as unknown;
-    let amount: bigint;
+export function liveTokenResolver(server: rpc.Server, network: Network): TokenResolver {
+  return async (contractId: string): Promise<TokenRef> => {
     try {
-      amount =
-        typeof rawAmount === 'bigint' ? rawAmount : BigInt(rawAmount as string | number | boolean);
+      const [symbol, decimals] = await Promise.all([
+        simulateGetter(server, contractId, 'symbol', network),
+        simulateGetter(server, contractId, 'decimals', network),
+      ]);
+      if (
+        typeof symbol === 'string' &&
+        typeof decimals === 'number' &&
+        Number.isInteger(decimals)
+      ) {
+        return { contractId, symbol, decimals, resolved: true };
+      }
+      return fallbackToken(contractId);
     } catch {
-      // A transfer event with a non-integer payload is malformed; skip it
-      // rather than aborting the whole recording.
-      continue;
+      // Deliberate fallback, not a silent catch: `resolved: false` plus the
+      // assembler's warning surface it in the recording output.
+      return fallbackToken(contractId);
     }
-    transfers.push({
-      tokenContractId: event.contractId,
-      from: typeof from === 'string' ? from : null,
-      to: typeof to === 'string' ? to : null,
-      amount: amount < 0n ? -amount : amount,
-    });
-  }
-  return transfers;
+  };
 }
 
 /**
- * Turn transfer events into directional flows relative to the subject account,
- * resolving each distinct token's metadata once (cached) via {@link resolveToken}.
+ * Convenience: a live token resolver for a network without hand-building the
+ * server first (used by the CLI's simulation-ingestion path, which needs
+ * metadata resolution but fetches no transactions).
  */
-async function deriveFlows(
-  server: rpc.Server,
-  transfers: readonly TransferEvent[],
-  subject: string | null,
-  network: Network,
-): Promise<AssetFlow[]> {
-  const tokenCache = new Map<string, TokenRef>();
-  const flows: AssetFlow[] = [];
-  for (const t of transfers) {
-    if (t.amount === 0n || subject === null) {
-      continue;
-    }
-    let direction: AssetFlow['direction'] | null = null;
-    if (t.to === subject) {
-      direction = 'in';
-    } else if (t.from === subject) {
-      direction = 'out';
-    }
-    if (direction === null) {
-      continue; // internal hop (neither leg touches the subject account)
-    }
-    let asset = tokenCache.get(t.tokenContractId);
-    if (asset === undefined) {
-      asset = await resolveToken(server, t.tokenContractId, network);
-      tokenCache.set(t.tokenContractId, asset);
-    }
-    flows.push({ asset, direction, amount: t.amount });
-  }
-  return flows;
-}
-
-/**
- * Fetch and normalise a transaction by hash. Throws {@link RpcError} with an
- * actionable message on any failure (not found / failed / decode error).
- */
-export async function recordFromHash(hash: string, options: RecordOptions): Promise<RecordedTx> {
-  if (!/^[0-9a-fA-F]{64}$/.test(hash)) {
-    throw new RpcError(`"${hash}" is not a 64-character hex transaction hash`);
-  }
-  const { network } = options;
-  const url = options.rpcUrl ?? RPC_URLS[network];
+export function tokenResolverFor(network: Network, rpcUrl?: string): TokenResolver {
+  const url = rpcUrl ?? RPC_URLS[network];
   const server = new rpc.Server(url, { allowHttp: url.startsWith('http://') });
+  return liveTokenResolver(server, network);
+}
 
+/** Fetch one hash and decode it, mapping RPC states onto the error taxonomy. */
+async function fetchAndDecode(
+  server: rpc.Server,
+  url: string,
+  hash: string,
+  network: Network,
+): Promise<DecodedTx> {
   let response: rpc.Api.GetTransactionResponse;
   try {
     response = await server.getTransaction(hash);
   } catch (cause) {
-    throw new RpcError(
+    throw networkError(
       `RPC request to ${url} failed: ${(cause as Error).message}. Check the endpoint and network.`,
     );
   }
 
   if (response.status === rpc.Api.GetTransactionStatus.NOT_FOUND) {
-    throw new RpcError(
-      `transaction ${hash} not found on ${network}. It may be outside the RPC retention window or on a different network.`,
+    const oldest = new Date(response.oldestLedgerCloseTime * 1000).toISOString();
+    throw txNotFound(
+      `transaction ${hash} not found on ${network}. Public RPC nodes only retain recent history ` +
+        `(this node: ledgers ${response.oldestLedger}–${response.latestLedger}, oldest closed ${oldest}, ` +
+        `about 7 days); older transactions must be recorded from a saved capture or an archival node. ` +
+        `Also check the hash is on the right network.`,
     );
   }
   if (response.status === rpc.Api.GetTransactionStatus.FAILED) {
-    throw new RpcError(
-      `transaction ${hash} failed on-chain; there is no successful flow to record`,
+    throw badInput(
+      `transaction ${hash} failed on-chain (ledger ${response.ledger}); there is no successful flow to record`,
     );
   }
 
-  const tx = extractV1Transaction(response.envelopeXdr);
-  const subject = sourceAccountAddress(tx);
-  const calls = extractCalls(tx);
-  if (calls.length === 0) {
-    throw new RpcError(
-      `transaction ${hash} contains no InvokeContract operations; nothing to synthesize`,
-    );
-  }
-  const flows = await deriveFlows(
-    server,
-    extractTransfers(response.events.contractEventsXdr),
-    subject,
-    network,
-  );
-
-  return {
+  // RPC 27.1.1 returns createdAt as a JSON *string* and sdk 15.1.0 passes it
+  // through verbatim despite typing it `number` (FACTS §3.2) — normalise.
+  const createdAt = Number(response.createdAt);
+  return decodeTx({
     hash,
+    ledger: response.ledger,
+    createdAt: Number.isFinite(createdAt) ? createdAt : null,
+    applicationOrder: response.applicationOrder,
+    envelope: response.envelopeXdr,
+    contractEvents: response.events.contractEventsXdr,
+  });
+}
+
+/**
+ * Fetch and normalise a transaction sequence by hash. Order of the resulting
+ * calls follows ledger close time, not argument order. Throws
+ * {@link RecorderError} with an actionable message on any failure.
+ */
+export async function recordFromHashes(
+  hashes: readonly string[],
+  options: RecordOptions,
+): Promise<RecordedTx> {
+  if (hashes.length === 0) {
+    throw badInput('record requires at least one transaction hash');
+  }
+  const normalised = hashes.map(validateHash);
+  const distinct = new Set(normalised);
+  if (distinct.size !== normalised.length) {
+    throw badInput('duplicate transaction hashes given; each hash records once');
+  }
+  const subject = options.account === undefined ? undefined : validateAccount(options.account);
+
+  const { network } = options;
+  const url = options.rpcUrl ?? RPC_URLS[network];
+  const server = new rpc.Server(url, { allowHttp: url.startsWith('http://') });
+
+  const decoded: DecodedTx[] = [];
+  for (const hash of normalised) {
+    decoded.push(await fetchAndDecode(server, url, hash, network));
+  }
+
+  const totalCalls = decoded.reduce((n, tx) => n + tx.invocations.length, 0);
+  if (totalCalls === 0) {
+    throw badInput(
+      'the given transaction(s) contain no InvokeContract operations; nothing to record',
+    );
+  }
+
+  return assembleRecording(decoded, {
     network,
     source: 'rpc',
-    ledger: response.ledger,
-    timestamp: response.createdAt,
-    calls,
-    flows,
-  };
+    ...(subject === undefined ? {} : { subject }),
+    resolveToken: liveTokenResolver(server, network),
+  });
 }

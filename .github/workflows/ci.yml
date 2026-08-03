@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -33,3 +34,68 @@ jobs:
 
       - name: Demo (offline smoke test)
         run: npm run demo
+
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install docs-site dependencies
+        run: npm ci
+        working-directory: site
+
+      - name: Build docs site
+        run: npm run build
+        working-directory: site
+
+  contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+
+      # rustup reads contracts/rust-toolchain.toml — channel 1.97.1,
+      # target wasm32v1-none, components rustfmt + clippy.
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets --locked -- -D warnings
+
+      - name: Test
+        run: cargo test --locked
+
+      # Same pinned CLI version as the D1.3 deploy (FACTS.md §1.1); the
+      # action ref selects the release binary to install.
+      - name: Install stellar-cli
+        uses: stellar/stellar-cli@v27.1.0
+
+      - name: Build contract wasm with stellar-cli
+        run: stellar contract build --package frequency-limit-policy
+
+      # Cross-platform reproducibility verified in run 30839117017 (Linux
+      # x86_64 == macOS arm64 hash; FACTS.md §1.5) — asserted since then.
+      - name: Assert built wasm hash equals the recorded reproducible build
+        run: |
+          built=$(sha256sum target/wasm32v1-none/release/frequency_limit_policy.wasm | cut -d' ' -f1)
+          expected=42227f2b6150c95a7084bb7c5ff2e7a40793eae39bf0c5dc95bd752d18ee6eed
+          echo "built:    $built"
+          echo "expected: $expected (FACTS.md §1.5; equals the deployed on-chain wasm)"
+          [ "$built" = "$expected" ] || { echo "::error::built wasm sha256 differs from the recorded reproducible hash"; exit 1; }
+          echo "hash matches the recorded reproducible build and the deployed on-chain wasm"

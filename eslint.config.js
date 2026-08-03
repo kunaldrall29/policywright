@@ -4,7 +4,9 @@ import prettier from 'eslint-config-prettier';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['node_modules/', 'dist/', 'out/'] },
+  // site/ is the docs site — its own package with its own tooling and CI job.
+  // ._* is macOS AppleDouble metadata that appears on non-native filesystems.
+  { ignores: ['node_modules/', 'dist/', 'out/', 'site/', 'contracts/', '**/._*'] },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

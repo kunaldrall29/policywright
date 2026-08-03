@@ -1,0 +1,141 @@
+/*
+ * Policywright docs — design tokens.
+ *
+ * Palette: deep blue #1E5FA8 (accent), dark navy #1F2937, light blue #EAF1F8,
+ * warm accent #A23B2E (warnings only), white background, subtle grid.
+ * Fonts: Inter (UI), JetBrains Mono (code). No gradients, no imagery.
+ */
+
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+
+:root {
+  --sl-font: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --sl-font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --pw-accent: #1e5fa8;
+  --pw-navy: #1f2937;
+  --pw-blue-light: #eaf1f8;
+  --pw-warm: #a23b2e;
+}
+
+/* Dark theme (Starlight default scope). Navy-based, blue accent. */
+:root {
+  --sl-color-accent-low: #17324f;
+  --sl-color-accent: #1e5fa8;
+  --sl-color-accent-high: #a9c9ec;
+  --sl-color-white: #f4f7fa;
+  --sl-color-gray-1: #e3e9ef;
+  --sl-color-gray-2: #c2ccd6;
+  --sl-color-gray-3: #94a3b2;
+  --sl-color-gray-4: #5c6a79;
+  --sl-color-gray-5: #39455465;
+  --sl-color-gray-6: #263140;
+  --sl-color-black: #1f2937;
+}
+
+/* Light theme. White background, navy text, blue accent. */
+:root[data-theme='light'] {
+  --sl-color-accent-low: #eaf1f8;
+  --sl-color-accent: #1e5fa8;
+  --sl-color-accent-high: #163e6d;
+  --sl-color-white: #1f2937;
+  --sl-color-gray-1: #2c3947;
+  --sl-color-gray-2: #3f4d5d;
+  --sl-color-gray-3: #5c6a79;
+  --sl-color-gray-4: #8494a5;
+  --sl-color-gray-5: #c9d5e0;
+  --sl-color-gray-6: #eef3f8;
+  --sl-color-gray-7: #f7fafc;
+  --sl-color-black: #ffffff;
+}
+
+/* Subtle grid feel on the page background (hairlines, not gradients). */
+:root[data-theme='light'] body {
+  background-image:
+    linear-gradient(to right, rgba(30, 95, 168, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(30, 95, 168, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+:root[data-theme='dark'] body {
+  background-image:
+    linear-gradient(to right, rgba(234, 241, 248, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(234, 241, 248, 0.03) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Generous whitespace. */
+.sl-markdown-content {
+  line-height: 1.7;
+}
+.sl-markdown-content :is(h2):not(:where(.not-content *)) {
+  margin-top: 2.5rem;
+}
+
+/* Warm accent is reserved for warnings: caution asides use #A23B2E. */
+.starlight-aside--caution {
+  --sl-color-asides-text-accent: var(--pw-warm);
+  --sl-color-asides-border: var(--pw-warm);
+  background-color: rgba(162, 59, 46, 0.08);
+}
+
+/* Status badges (Shipped / In development / Planned). */
+.pw-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: var(--sl-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid;
+  margin: 0;
+}
+.pw-status-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+.pw-status--shipped {
+  color: var(--sl-color-accent-high);
+  border-color: var(--pw-accent);
+  background-color: var(--sl-color-accent-low);
+}
+.pw-status--in-development {
+  color: var(--sl-color-white);
+  border-color: var(--sl-color-gray-3);
+  background-color: var(--sl-color-gray-6);
+}
+.pw-status--planned {
+  color: var(--sl-color-gray-2);
+  border-color: var(--sl-color-gray-4);
+  background-color: transparent;
+}
+
+/* Unaudited-contracts banner (verbatim wording set in the component). */
+.pw-unaudited {
+  border: 1px solid var(--pw-warm);
+  border-inline-start-width: 4px;
+  border-radius: 0.25rem;
+  padding: 0.85rem 1rem;
+  margin: 1.25rem 0;
+  background-color: rgba(162, 59, 46, 0.08);
+  color: var(--sl-color-white);
+  font-weight: 500;
+}
+
+/* Mermaid diagram container. */
+.pw-mermaid {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+.pw-mermaid svg {
+  max-width: 100%;
+  height: auto;
+}

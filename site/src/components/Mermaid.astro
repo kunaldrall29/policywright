@@ -1,0 +1,78 @@
+---
+/**
+ * Client-rendered Mermaid diagram. The diagram source is embedded in the
+ * static HTML (as data + a plain-text fallback) and rendered to SVG in the
+ * browser, re-rendering on Starlight theme changes so it matches dark/light.
+ */
+interface Props {
+  code: string;
+}
+const { code } = Astro.props;
+---
+
+<div class="pw-mermaid not-content" data-mermaid-code={code}>
+  <pre class="pw-mermaid-fallback">{code}</pre>
+</div>
+
+<script>
+  import mermaid from 'mermaid';
+
+  let renderPass = 0;
+
+  async function renderAll(): Promise<void> {
+    const pass = ++renderPass;
+    const dark = document.documentElement.dataset.theme === 'dark';
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'base',
+      themeVariables: dark
+        ? {
+            fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+            primaryColor: '#17324f',
+            primaryTextColor: '#f4f7fa',
+            primaryBorderColor: '#1e5fa8',
+            lineColor: '#94a3b2',
+            secondaryColor: '#263140',
+            tertiaryColor: '#1f2937',
+            background: '#1f2937',
+            mainBkg: '#17324f',
+            nodeTextColor: '#f4f7fa',
+          }
+        : {
+            fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+            primaryColor: '#eaf1f8',
+            primaryTextColor: '#1f2937',
+            primaryBorderColor: '#1e5fa8',
+            lineColor: '#5c6a79',
+            secondaryColor: '#f7fafc',
+            tertiaryColor: '#ffffff',
+            background: '#ffffff',
+            mainBkg: '#eaf1f8',
+            nodeTextColor: '#1f2937',
+          },
+    });
+
+    const containers = document.querySelectorAll<HTMLElement>('.pw-mermaid[data-mermaid-code]');
+    let i = 0;
+    for (const container of containers) {
+      const code = container.dataset.mermaidCode;
+      if (!code) continue;
+      try {
+        const id = `pw-mermaid-${pass}-${i++}`;
+        const { svg } = await mermaid.render(id, code);
+        if (pass !== renderPass) return; // a newer pass superseded this one
+        container.innerHTML = svg;
+      } catch {
+        // Leave the plain-text fallback in place if rendering fails.
+      }
+    }
+  }
+
+  renderAll();
+
+  // Starlight's theme toggle sets data-theme on <html>; re-render to match.
+  new MutationObserver((mutations) => {
+    if (mutations.some((m) => m.attributeName === 'data-theme')) void renderAll();
+  }).observe(document.documentElement, { attributes: true });
+</script>

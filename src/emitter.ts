@@ -7,7 +7,16 @@
  */
 
 import { renderFrequencyLimitPolicy } from './rust-policy.js';
-import type { PolicySpec, RecordedTx, SmartAccountSpec, TokenRef } from './types.js';
+import {
+  CONTEXT_RULE_SCHEMA_VERSION,
+  ESTIMATED_SECS_PER_LEDGER,
+  OZ_TARGET,
+  type OzPolicyBinding,
+  type PolicySpec,
+  type RecordedTx,
+  type SmartAccountSpec,
+  type TokenRef,
+} from './types.js';
 
 /** Format a smallest-unit amount as a human decimal string for the token. */
 export function formatAmount(amount: bigint, decimals: number): string {
@@ -69,6 +78,86 @@ export function specToJson(spec: SmartAccountSpec): string {
   );
 }
 
+/** JSON-safe view of an OZ policy binding (bigints become decimal strings). */
+function serialiseBinding(binding: OzPolicyBinding): Record<string, unknown> {
+  switch (binding.policy) {
+    case 'stock:spending_limit':
+      return {
+        policy: binding.policy,
+        address: binding.address,
+        installParams: {
+          spending_limit: binding.installParams.spending_limit.toString(),
+          period_ledgers: binding.installParams.period_ledgers,
+        },
+        paramsSource: binding.paramsSource,
+        derivedFrom: {
+          asset: binding.derivedFrom.asset,
+          observedGrossOut: binding.derivedFrom.observedGrossOut.toString(),
+          spendWindowSecs: binding.derivedFrom.spendWindowSecs,
+        },
+      };
+    case 'custom:FrequencyLimitPolicy':
+      return {
+        policy: binding.policy,
+        address: binding.address,
+        installParams: binding.installParams,
+        paramsSource: binding.paramsSource,
+      };
+  }
+}
+
+/**
+ * Render the installable OZ context rules as versioned, bigint-safe JSON —
+ * the `context-rule.json` artifact (schema: docs/context-rule-schema.md).
+ * JSON has no comments, so each binding's OZ file:line citation travels in
+ * its `paramsSource` field.
+ */
+export function contextRuleJson(tx: RecordedTx, spec: SmartAccountSpec): string {
+  const sourceHashes = [
+    ...new Set(spec.ozContextRules.length > 0 ? tx.calls.map((c) => c.sourceHash) : []),
+  ].filter((h): h is string => h !== null);
+  return JSON.stringify(
+    {
+      schemaVersion: CONTEXT_RULE_SCHEMA_VERSION,
+      generatedBy: 'policywright',
+      target: OZ_TARGET,
+      source: {
+        network: tx.network,
+        recordedFrom: tx.source,
+        subject: tx.subject,
+        ledger: tx.ledger,
+        sourceHashes,
+      },
+      ledgerTimeBasis: {
+        estimatedSecsPerLedger: ESTIMATED_SECS_PER_LEDGER,
+        note: 'every *_ledgers and validUntilLedger value was converted from configured seconds at this estimated rate; recompute validUntilLedger from the live ledger head at install',
+      },
+      contextRules: spec.ozContextRules.map((rule) => ({
+        contextType: rule.contextType,
+        name: rule.name,
+        validUntilLedger: rule.validUntilLedger,
+        signers: [],
+        observedFns: rule.observedFns,
+        policies: rule.policies.map(serialiseBinding),
+      })),
+      notes: spec.notes,
+      config: spec.config,
+    },
+    null,
+    2,
+  );
+}
+
+/** One human-readable line describing an OZ policy binding. */
+function describeBinding(binding: OzPolicyBinding): string {
+  switch (binding.policy) {
+    case 'stock:spending_limit':
+      return `stock:spending_limit { spending_limit: ${binding.installParams.spending_limit}, period_ledgers: ${binding.installParams.period_ledgers} } (caps ${tokenLabel(binding.derivedFrom.asset)} transfers)`;
+    case 'custom:FrequencyLimitPolicy':
+      return `custom:FrequencyLimitPolicy { window_secs: ${binding.installParams.window_secs}, max_calls: ${binding.installParams.max_calls} }`;
+  }
+}
+
 /** One human-readable line describing a policy. */
 function describePolicy(policy: PolicySpec): string {
   switch (policy.kind) {
@@ -90,7 +179,7 @@ export function renderSummary(tx: RecordedTx, spec: SmartAccountSpec): string {
   lines.push('policywright — synthesized smart-account authorization');
   lines.push('='.repeat(54));
   lines.push('');
-  lines.push(`Source tx : ${tx.hash}`);
+  lines.push(`Source tx : ${tx.hash ?? '(simulation — no on-chain transaction)'}`);
   lines.push(`Network   : ${tx.network} (recorded from ${tx.source})`);
   lines.push('');
   lines.push('Observed flow');
@@ -126,6 +215,27 @@ export function renderSummary(tx: RecordedTx, spec: SmartAccountSpec): string {
       lines.push(`  - ${describePolicy(scope)}`);
     }
   }
+  if (spec.ozContextRules.length > 0) {
+    lines.push('');
+    lines.push(
+      `Installable OZ context rules (${spec.ozContextRules.length}) — see context-rule.json`,
+    );
+    lines.push('----------------------------');
+    for (const rule of spec.ozContextRules) {
+      lines.push(`  ${rule.name}  CallContract(${rule.contextType.contract})`);
+      lines.push(
+        `    valid until ledger ${rule.validUntilLedger ?? '(compute at install)'}; observed fns: ${rule.observedFns.join(', ')}`,
+      );
+      for (const binding of rule.policies) {
+        lines.push(`    - ${describeBinding(binding)}`);
+      }
+    }
+    lines.push('');
+    lines.push(
+      `  ${spec.notes.length} composition note(s) in context-rule.json (unit conversions,`,
+    );
+    lines.push('  deltas the stock policies cannot express).');
+  }
   if (spec.warnings.length > 0) {
     lines.push('');
     lines.push('Warnings');
@@ -144,6 +254,7 @@ export function renderSummary(tx: RecordedTx, spec: SmartAccountSpec): string {
 /** All emitted artefacts for a spec. */
 export interface EmittedArtifacts {
   readonly specJson: string;
+  readonly contextRuleJson: string;
   readonly summary: string;
   readonly rustPolicy: string;
 }
@@ -158,6 +269,7 @@ export function emit(tx: RecordedTx, spec: SmartAccountSpec): EmittedArtifacts {
   }
   return {
     specJson: specToJson(spec),
+    contextRuleJson: contextRuleJson(tx, spec),
     summary: renderSummary(tx, spec),
     rustPolicy: renderFrequencyLimitPolicy(frequency),
   };

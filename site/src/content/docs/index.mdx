@@ -1,0 +1,105 @@
+---
+title: Overview
+description: What Policywright is, what exists in v0, and where the project is headed.
+---
+
+import StatusBadge from '../../components/StatusBadge.astro';
+
+<StatusBadge status="in-development" />
+
+Policywright turns a transaction a user has already performed (or simulated) on
+Stellar/Soroban into the **least-privilege
+[OpenZeppelin smart-account](https://docs.openzeppelin.com/stellar-contracts/accounts/smart-account)
+authorization** that permits exactly that flow — a context rule plus the minimum
+set of policies — and lets them verify it with a dry-run before anything is
+installed on-chain.
+
+The project is **in development**. This site documents version 0
+(`0.1.0` in [package.json](https://github.com/kunal-drall/policywright/blob/main/package.json)),
+an offline-first pipeline you can run today, and the roadmap for what comes next.
+
+## The pipeline
+
+1. **Record** — capture a transaction as a normalised `RecordedTx`: the scoped
+   contract calls and the token in/out flows. Sourced from a committed offline
+   fixture or, on demand, from a live Soroban RPC node by transaction hash.
+2. **Synthesize** — derive a least-privilege `SmartAccountSpec`: a context rule
+   scoped to the exact `(contract, function)` pairs observed, a gross-outflow
+   spending cap per asset that left the account, no cap for assets that only
+   flowed in, and an always-on frequency limit.
+3. **Emit** — render the spec as machine-readable JSON (`spec.json` plus
+   installable `context-rule.json`), a human-readable summary, and an
+   _illustrative_ custom Rust policy — the same source as the compiled-and-tested
+   crate in `contracts/`.
+4. **Simulate** — dry-run candidate calls against the spec and report whether
+   each would be permitted, denied, or flagged — and why — before anything is
+   installed.
+
+See [Architecture](/architecture/) for the design in depth, and
+[Getting Started](/getting-started/) to run it.
+
+## What exists in v0
+
+Everything below is in the repository today and runs offline:
+
+- **Recording layer** — offline fixture loader and a live Soroban RPC adapter
+  (`getTransaction` by hash, SEP-41 transfer-event decoding, SAC metadata
+  resolution) —
+  [src/sources/](https://github.com/kunal-drall/policywright/tree/main/src/sources)
+- **Least-privilege synthesizer** — scope binding, gross-outflow spend caps,
+  minimal-permission inflow handling, frequency limits, and config-gated
+  argument-level scope —
+  [src/synthesizer.ts](https://github.com/kunal-drall/policywright/blob/main/src/synthesizer.ts)
+- **Emitter** — `spec.json`, `context-rule.json`, `summary.txt`, and a
+  clearly-stamped illustrative Rust policy —
+  [src/emitter.ts](https://github.com/kunal-drall/policywright/blob/main/src/emitter.ts),
+  [src/rust-policy.ts](https://github.com/kunal-drall/policywright/blob/main/src/rust-policy.ts)
+- **Dry-run simulator** — permit/deny/flag evaluation with auto-generated deny
+  cases —
+  [src/simulate.ts](https://github.com/kunal-drall/policywright/blob/main/src/simulate.ts)
+- **CLI, tests, and CI** — `demo`, `synth`, `simulate`, and `record` commands;
+  a Vitest suite with coverage thresholds; CI configured for pushes to `main`
+  and pull requests, running lint → format → typecheck → test → demo plus a
+  docs-site build and the Rust contracts job (on this fork runs are currently
+  dispatched manually — the cited runs are in
+  [evidence/EVIDENCE.md](https://github.com/kunal-drall/policywright/blob/main/evidence/EVIDENCE.md)) —
+  [src/cli.ts](https://github.com/kunal-drall/policywright/blob/main/src/cli.ts),
+  [test/](https://github.com/kunal-drall/policywright/tree/main/test),
+  [CI workflow](https://github.com/kunal-drall/policywright/actions/workflows/ci.yml)
+
+The pipeline in `src/` never signs, deploys, or relays transactions, and v0 has
+no MCP server, Claude skill, or wallet integration — those are planned (see the
+[Roadmap](/roadmap/)). The one exception outside the pipeline is the opt-in,
+testnet-only deploy script for the generated policy contract itself
+([scripts/deploy-testnet.sh](https://github.com/kunal-drall/policywright/blob/main/scripts/deploy-testnet.sh),
+evidenced in the deployment log in
+[evidence/EVIDENCE.md](https://github.com/kunal-drall/policywright/blob/main/evidence/EVIDENCE.md)).
+
+## The worked example and its assets
+
+The worked example throughout this site is a Stellar/Soroban flow: a **Blend**
+pool emissions claim (BLND in) followed by a **Soroswap** exact-input swap of
+that BLND into **USDC** (BLND out, USDC in).
+
+The deterministic test fixture uses **labelled synthetic assets** — well-formed
+but synthetic contract addresses carrying the symbols BLND, XLM, and USDC (the
+[fixture](https://github.com/kunal-drall/policywright/blob/main/fixtures/recorded-tx.json)
+says so in its own note) — and is never presented as real USDC. Live demos are
+planned and not yet published. When live demos are published, they will use the
+Circle-issued USDC asset on Stellar, with the issuer pinned in config and
+verified against Circle's official documentation.
+
+## Prior art
+
+Policywright extends the prior art of
+[kalepail/pollywallet](https://github.com/kalepail/pollywallet) by Tyler van der
+Hoeven — a passkey-secured smart-wallet demo on Stellar that deploys
+OpenZeppelin smart-account contracts on Soroban. pollywallet shows how to create
+and operate a smart wallet; Policywright adds the step of deriving the
+least-privilege authorization from a transaction the user already performed,
+plus an offline dry-run to verify it before installing. See the
+[README acknowledgements](https://github.com/kunal-drall/policywright#acknowledgements)
+for the full adopt/extend/replace breakdown.
+
+Policywright is open source under the
+[MIT license](https://github.com/kunal-drall/policywright/blob/main/LICENSE).

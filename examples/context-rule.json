@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "policywright",
+  "target": {
+    "package": "stellar-accounts (OpenZeppelin/stellar-contracts)",
+    "version": "v0.7.2",
+    "commit": "a9c42169000638da937577f592ebf61a7a3c94ca",
+    "installEntryPoint": "SmartAccount::add_context_rule(context_type, name, valid_until, signers, policies: Map<Address, Val>) — packages/accounts/src/smart_account/mod.rs:238-248"
+  },
+  "source": {
+    "network": "testnet",
+    "recordedFrom": "fixture",
+    "subject": "CABJN4UUYDTF6C2G3WQJCWLG4KNQS2EVLCORKPWMIMSKYPU3FVNFCBS2",
+    "ledger": 1850421,
+    "sourceHashes": [
+      "3389e9f0f1a32b9c7c1cf3b8a2e5d4c6b7a8901234567890abcdef123456789a"
+    ]
+  },
+  "ledgerTimeBasis": {
+    "estimatedSecsPerLedger": 5,
+    "note": "every *_ledgers and validUntilLedger value was converted from configured seconds at this estimated rate; recompute validUntilLedger from the live ledger head at install"
+  },
+  "contextRules": [
+    {
+      "contextType": {
+        "type": "CallContract",
+        "contract": "CCFZSK3W5W54JT2QPLBDDQ5W4JEIVBG3PUFONKE5YOMS52L6GQIPIV4V"
+      },
+      "name": "pw:claim",
+      "validUntilLedger": 2368821,
+      "signers": [],
+      "observedFns": [
+        "claim"
+      ],
+      "policies": [
+        {
+          "policy": "custom:FrequencyLimitPolicy",
+          "address": null,
+          "installParams": {
+            "window_secs": 86400,
+            "max_calls": 5
+          },
+          "paramsSource": "policywright-generated FrequencyLimitPolicy (contracts/frequency-limit-policy, emitted by src/rust-policy.ts) — FrequencyLimitParams { window_secs: u64, max_calls: u32 }"
+        }
+      ]
+    },
+    {
+      "contextType": {
+        "type": "CallContract",
+        "contract": "CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7"
+      },
+      "name": "pw:swap",
+      "validUntilLedger": 2368821,
+      "signers": [],
+      "observedFns": [
+        "swap_exact_tokens_for_tokens"
+      ],
+      "policies": [
+        {
+          "policy": "custom:FrequencyLimitPolicy",
+          "address": null,
+          "installParams": {
+            "window_secs": 86400,
+            "max_calls": 5
+          },
+          "paramsSource": "policywright-generated FrequencyLimitPolicy (contracts/frequency-limit-policy, emitted by src/rust-policy.ts) — FrequencyLimitParams { window_secs: u64, max_calls: u32 }"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "DELTA: the BLND spend cap (13579500000 per 86400s) is not expressible with the stock spending_limit policy — the recording shows no subject-authorized direct transfer of this token, and spending_limit only meters direct transfer calls, panicking NotAllowed on anything else (spending_limit.rs:222-294; RECONCILIATION row 12). The cap stays enforced in the offline dry run; on-chain enforcement of it needs a custom policy.",
+    "valid_until is a LEDGER SEQUENCE, not a Unix time (storage.rs:282; RECONCILIATION row 15): emitted 2368821 = recording ledger 1850421 + 518400 ledgers (2592000s at 5s/ledger). Recompute from the live ledger head at install — the recording ledger is in the past.",
+    "context rules cannot carry function names (matching is contract-level — storage.rs:289-304; RECONCILIATION rows 13-14): observedFns is advisory. Function-level narrowing must live in a policy's enforce; that codegen is Tranche 2 (docs/T2-NOTES.md).",
+    "emitted rules carry no signers: attach the smart account's signer(s) at install. add_context_rule requires at least one signer or policy per rule (mod.rs:20-21), and stock spending_limit::enforce rejects when no signers authenticated (spending_limit.rs:232-234).",
+    "DELTA: no stock policy can express the observed argument constraints (swap path token set); they are advisory in the offline dry run only. Argument-level policy codegen is Tranche 2 (docs/T2-NOTES.md)."
+  ],
+  "config": {
+    "lifetimeSecs": 2592000,
+    "spendWindowSecs": 86400,
+    "capMultiplier": 1.1,
+    "frequencyWindowSecs": 86400,
+    "frequencyMaxCalls": 5,
+    "constrainArguments": false
+  }
+}

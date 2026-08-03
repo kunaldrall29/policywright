@@ -1,0 +1,64 @@
+---
+title: Context rules
+description: How Policywright derives a scoped, time-bounded context rule from a recorded transaction.
+---
+
+import StatusBadge from '../../../components/StatusBadge.astro';
+
+<StatusBadge status="shipped" />
+
+In OpenZeppelin's
+[Stellar smart-account model](https://docs.openzeppelin.com/stellar-contracts/accounts/smart-account),
+a **context rule** binds an authorization to a scope and a lifetime; **policies**
+attached to the rule then enforce programmable constraints. Policywright's
+output mirrors that model: the synthesized `SmartAccountSpec` is a context rule
+plus a minimal policy set
+([src/types.ts](https://github.com/kunal-drall/policywright/blob/main/src/types.ts)).
+
+## What v0 derives
+
+From a recorded transaction, the synthesizer
+([src/synthesizer.ts](https://github.com/kunal-drall/policywright/blob/main/src/synthesizer.ts))
+builds a context rule with:
+
+- **Scope** — the distinct `(contract, function)` pairs observed, in first-seen
+  order, deduplicated. Nothing that was not observed is ever added: a recording
+  that called `claim` and `swap_exact_tokens_for_tokens` authorises those two
+  pairs and no third
+  ([scope-binding tests](https://github.com/kunal-drall/policywright/blob/main/test/synthesizer.test.ts)).
+- **Name** — a short deterministic rule name derived from the called function
+  verbs (e.g. `pw:claim+swap`), truncated to 20 bytes (multibyte symbols count
+  per byte) because OpenZeppelin
+  caps rule names at that length.
+- **Lifetime** — `validUntil` is the synthesis time plus the configured
+  lifetime (`--lifetime`, default 30 days). Synthesis takes the current time as
+  an explicit parameter, so the result is deterministic and testable.
+
+## Example
+
+From the committed example run
+([examples/spec.json](https://github.com/kunal-drall/policywright/blob/main/examples/spec.json)):
+
+```json title="examples/spec.json — contextRule"
+{
+  "contextRule": {
+    "name": "pw:claim+swap",
+    "scopedCalls": [
+      {
+        "contract": "CCFZSK3W5W54JT2QPLBDDQ5W4JEIVBG3PUFONKE5YOMS52L6GQIPIV4V",
+        "fnName": "claim"
+      },
+      {
+        "contract": "CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7",
+        "fnName": "swap_exact_tokens_for_tokens"
+      }
+    ],
+    "validUntil": 1751414400
+  }
+}
+```
+
+The dry-run simulator enforces the rule in the same order the checks are
+documented: a call outside the scoped pairs is denied with reason `scope`; a
+call after `validUntil` is denied with reason `lifetime`
+([src/simulate.ts](https://github.com/kunal-drall/policywright/blob/main/src/simulate.ts)).

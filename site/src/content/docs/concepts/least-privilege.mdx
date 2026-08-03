@@ -1,0 +1,72 @@
+---
+title: Least-privilege model
+description: Permit exactly the observed flow and nothing else — the rules v0 applies and verifies.
+---
+
+import StatusBadge from '../../../components/StatusBadge.astro';
+
+<StatusBadge status="shipped" />
+
+Policywright's core thesis: the safest authorization is derived from a
+transaction the user has already performed. Whatever that transaction did is
+what the delegate may do — **exactly that flow, and nothing else**. v0 applies
+this as a set of concrete rules, each of them tested
+([test/synthesizer.test.ts](https://github.com/kunal-drall/policywright/blob/main/test/synthesizer.test.ts),
+[test/simulate.test.ts](https://github.com/kunal-drall/policywright/blob/main/test/simulate.test.ts)).
+
+## Scope is exact
+
+The context rule binds exactly the `(contract, function)` pairs observed —
+never a third. A call to any other function, even on the same contract, is
+denied with reason `scope`.
+
+## Caps are gross, not net
+
+Spending caps derive from **gross outflow** per asset — the maximum the
+delegate caused to leave the account — not net flow. In the worked example, a
+claim brings in 1234.5 BLND and a swap sends 1234.5 BLND out: net is ~zero, but
+the delegate still moved 1234.5 BLND out, so BLND is capped at the gross amount
+(×1.1 headroom by default). This case is pinned by a dedicated regression test
+([`caps on GROSS out even when in/out net to zero (gross-vs-net regression)`](https://github.com/kunal-drall/policywright/blob/main/test/synthesizer.test.ts)).
+
+## Inflow-only assets get no cap
+
+An asset that only ever flowed **in** (the USDC received from the swap) moves
+nothing out of the account, so no spending policy is emitted for it at all.
+Granting no permission is the minimal permission.
+
+## Time and rate are bounded
+
+Every rule carries a lifetime (`validUntil`), and every spec carries a
+frequency limit — a rolling-window call cap — so even an in-scope, under-cap
+delegation cannot run forever or run unboundedly often.
+
+## The dry run proves the deny cases
+
+A least-privilege claim is only credible if the adjacent cases actually fail.
+The simulator
+([src/simulate.ts](https://github.com/kunal-drall/policywright/blob/main/src/simulate.ts))
+derives a standard scenario set from every spec and evaluates it before
+anything would be installed:
+
+| Scenario                          | Expected  |
+| --------------------------------- | --------- |
+| Replay the recorded flow          | ✅ permit |
+| One unit over the spend cap       | ⛔ deny   |
+| Call to an unseen function        | ⛔ deny   |
+| Call after rule expiry            | ⛔ deny   |
+| One call over the frequency limit | ⛔ deny   |
+| Route through an unobserved token | ⚠️ flag (default) / ⛔ deny (`--constrain-arguments`) |
+
+`npm run demo` asserts all six behave as expected and exits non-zero otherwise
+([committed report](https://github.com/kunal-drall/policywright/blob/main/examples/simulation-report.md)).
+
+## Honest edges
+
+Where v0 does not constrain something, it says so rather than implying
+coverage: an unobserved swap route under the default config is **flagged**
+explicitly — surfaced as a gap, not silently permitted
+([src/simulate.ts](https://github.com/kunal-drall/policywright/blob/main/src/simulate.ts)).
+Unresolvable token metadata is labelled `resolved: false` — never a silent
+guess
+([src/sources/rpc.ts](https://github.com/kunal-drall/policywright/blob/main/src/sources/rpc.ts)).

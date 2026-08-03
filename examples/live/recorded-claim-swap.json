@@ -1,0 +1,102 @@
+{
+  "hash": "2dcff6618ff12fb629700cab627b3870afa3f0dd000becf88b2eb7826d0b2c1b",
+  "network": "testnet",
+  "source": "rpc",
+  "ledger": 3817770,
+  "timestamp": 1785107316,
+  "subject": "CCW6R5ZKEIJJ75YT54TEHMRUYTP4XQGUI6H63EE3W65H4P4FAUICXP3Q",
+  "calls": [
+    {
+      "contract": "CCJUD55AG6W5HAI5LRVNKAE5WDP5XGZBUDS5WNTIVDU7O264UZZE7BRD",
+      "fnName": "swap_exact_tokens_for_tokens",
+      "args": [
+        "10000000",
+        "293170",
+        [
+          "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+          "CB3TLW74NBIOT3BUWOZ3TUM6RFDF6A4GVIRUQRQZABG5KPOUL4JJOV2F"
+        ],
+        "CCW6R5ZKEIJJ75YT54TEHMRUYTP4XQGUI6H63EE3W65H4P4FAUICXP3Q",
+        "1785107613"
+      ],
+      "sourceHash": "2dcff6618ff12fb629700cab627b3870afa3f0dd000becf88b2eb7826d0b2c1b",
+      "authorizations": [
+        {
+          "contract": "CCJUD55AG6W5HAI5LRVNKAE5WDP5XGZBUDS5WNTIVDU7O264UZZE7BRD",
+          "fnName": "swap_exact_tokens_for_tokens",
+          "args": [
+            "10000000",
+            "293170",
+            [
+              "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+              "CB3TLW74NBIOT3BUWOZ3TUM6RFDF6A4GVIRUQRQZABG5KPOUL4JJOV2F"
+            ],
+            "CCW6R5ZKEIJJ75YT54TEHMRUYTP4XQGUI6H63EE3W65H4P4FAUICXP3Q",
+            "1785107613"
+          ],
+          "subInvocations": [
+            {
+              "contract": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+              "fnName": "transfer",
+              "args": [
+                "CCW6R5ZKEIJJ75YT54TEHMRUYTP4XQGUI6H63EE3W65H4P4FAUICXP3Q",
+                "CDVAIOYHCD4RUSLQNVFI7RIZBFT2JZMJWM4RTOLQZQXL4QAVXU5RFKDB",
+                "10000000"
+              ],
+              "subInvocations": []
+            }
+          ]
+        },
+        {
+          "contract": "CCW6R5ZKEIJJ75YT54TEHMRUYTP4XQGUI6H63EE3W65H4P4FAUICXP3Q",
+          "fnName": "__check_auth",
+          "args": [
+            "hex:daf0df5de450c59f2d49042d17eb7a14fa465073a4fc3ae08e0bbfec0cb3485a"
+          ],
+          "subInvocations": []
+        }
+      ]
+    },
+    {
+      "contract": "CCSLYYVQ575EAPCDOEYGVOI4NVYD2V7RP3F5HRP4LVDUWEJ4HOLVL357",
+      "fnName": "harvest",
+      "args": [
+        "GCH2MMBNWHJZUA3ZI5BTFDTJZQWALDOCRYXCT4S7MSN6RUXXA34E7B5G"
+      ],
+      "sourceHash": "acf256a0688e7f9c36520f4fc20cfa924d1b2e593033d85b0e443ce770b2d452",
+      "authorizations": [
+        {
+          "contract": "CCSLYYVQ575EAPCDOEYGVOI4NVYD2V7RP3F5HRP4LVDUWEJ4HOLVL357",
+          "fnName": "harvest",
+          "args": [
+            "GCH2MMBNWHJZUA3ZI5BTFDTJZQWALDOCRYXCT4S7MSN6RUXXA34E7B5G"
+          ],
+          "subInvocations": []
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "asset": {
+        "contractId": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+        "symbol": "native",
+        "decimals": 7,
+        "resolved": true
+      },
+      "direction": "out",
+      "amount": "10000000"
+    },
+    {
+      "asset": {
+        "contractId": "CB3TLW74NBIOT3BUWOZ3TUM6RFDF6A4GVIRUQRQZABG5KPOUL4JJOV2F",
+        "symbol": "USDC",
+        "decimals": 7,
+        "resolved": true
+      },
+      "direction": "in",
+      "amount": "308600"
+    }
+  ],
+  "warnings": []
+}

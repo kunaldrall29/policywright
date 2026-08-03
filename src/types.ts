@@ -49,6 +49,22 @@ export interface TokenRef {
   readonly resolved: boolean;
 }
 
+/**
+ * One node of a transaction's authorization-entry tree: an authorized contract
+ * invocation together with the sub-invocations it was authorized to make.
+ * Decoded from `SorobanAuthorizationEntry.rootInvocation` (see FACTS.md §3.2).
+ */
+export interface InvocationNode {
+  /** Invoked contract address (`C...`). */
+  readonly contract: string;
+  /** Invoked function name (the Soroban symbol). */
+  readonly fnName: string;
+  /** Native-decoded arguments, in positional order. */
+  readonly args: readonly CallArg[];
+  /** Nested invocations authorized under this node, in tree order. */
+  readonly subInvocations: readonly InvocationNode[];
+}
+
 /** A single observed contract invocation, scoped to a contract + function. */
 export interface ScopedCall {
   /** Invoked contract address (`C...`). */
@@ -57,6 +73,20 @@ export interface ScopedCall {
   readonly fnName: string;
   /** Native-decoded arguments, in positional order. */
   readonly args: readonly CallArg[];
+  /**
+   * Hash of the transaction this invocation came from. In a multi-hash
+   * recording each call keeps its own source hash; `null` for simulated
+   * invocations, which have no on-chain transaction.
+   */
+  readonly sourceHash: string | null;
+  /**
+   * Authorization-entry trees attached to this invocation, when present.
+   * These record what the signers *authorized* (including nested calls, e.g.
+   * a router swap authorizing a token `transfer`), which the top-level
+   * invocation alone cannot show. Empty when the source carries no
+   * authorization entries (e.g. the offline fixture).
+   */
+  readonly authorizations: readonly InvocationNode[];
 }
 
 /** Direction of value movement relative to the smart account. */
@@ -71,25 +101,50 @@ export interface AssetFlow {
 }
 
 /** Where a {@link RecordedTx} came from. */
-export type RecordedTxSource = 'fixture' | 'rpc';
+export type RecordedTxSource = 'fixture' | 'rpc' | 'simulation';
 
 /**
- * A normalised record of a transaction the user already performed (or simulated).
- * This is the synthesizer's only input about what happened on-chain.
+ * A normalised record of a transaction sequence the user already performed (or
+ * simulated). This is the synthesizer's only input about what happened
+ * on-chain.
+ *
+ * A recording may merge several transactions (Soroban allows one
+ * `InvokeHostFunction` per transaction, so a claim→swap flow is multiple
+ * hashes): calls are concatenated in ledger-close-time order, each keeping its
+ * own {@link ScopedCall.sourceHash}, and flows are aggregated across the
+ * sequence.
  */
 export interface RecordedTx {
-  /** Transaction hash (hex). */
-  readonly hash: string;
+  /**
+   * Primary transaction hash (hex): the earliest transaction in the sequence.
+   * `null` for simulated recordings, which never touched the chain.
+   */
+  readonly hash: string | null;
   readonly network: Network;
   readonly source: RecordedTxSource;
-  /** Ledger sequence the tx was applied in, when known. */
+  /** Ledger sequence the (first) tx was applied in, when known. */
   readonly ledger: number | null;
-  /** Unix seconds the tx was applied, when known. */
+  /** Unix seconds the (first) tx was applied, when known. */
   readonly timestamp: number | null;
+  /**
+   * The account token movements are attributed to (`G...` or `C...`), when
+   * known. Flows are directional relative to this account.
+   */
+  readonly subject: string | null;
   /** Distinct contract calls observed, in invocation order. */
   readonly calls: readonly ScopedCall[];
-  /** Token movements observed, derived from contract (transfer) events. */
+  /**
+   * Token movements observed, derived from token movement events (`transfer`,
+   * SAC `mint`/`burn`/`clawback`), aggregated per (token, direction) across
+   * the sequence.
+   */
   readonly flows: readonly AssetFlow[];
+  /**
+   * Non-fatal recording caveats (defaulted subject, unresolved token
+   * metadata, skipped undecodable events). Never silently empty: anything the
+   * recorder could not decode or had to assume is surfaced here.
+   */
+  readonly warnings: readonly string[];
 }
 
 /**
@@ -117,6 +172,35 @@ export interface SynthConfig {
 
 /** OpenZeppelin smart accounts cap a context rule at this many policies. */
 export const MAX_POLICIES = 5;
+
+/**
+ * Estimated seconds per Stellar ledger, used to convert configured
+ * seconds-based windows into the ledger-based units the OZ contracts measure
+ * in (`period_ledgers`, `valid_until`). A documented estimate, not a network
+ * read: OZ's own `DAY_IN_LEDGERS = 17280` equals 86400 s at exactly this rate
+ * (see docs/FACTS.md §2.4, RECONCILIATION rows 11 and 15).
+ */
+export const ESTIMATED_SECS_PER_LEDGER = 5;
+
+/**
+ * Version of the emitted `context-rule.json` schema. Bump on any change to
+ * the emitted shape; the schema is documented in docs/context-rule-schema.md.
+ */
+export const CONTEXT_RULE_SCHEMA_VERSION = 1;
+
+/**
+ * The OpenZeppelin release every emitted install shape is verified against.
+ * File:line citations to OZ sources in emitted artifacts are relative to this
+ * commit; the custom frequency policy's `paramsSource` cites the in-repo
+ * compiled crate (contracts/frequency-limit-policy) instead.
+ */
+export const OZ_TARGET = {
+  package: 'stellar-accounts (OpenZeppelin/stellar-contracts)',
+  version: 'v0.7.2',
+  commit: 'a9c42169000638da937577f592ebf61a7a3c94ca',
+  installEntryPoint:
+    'SmartAccount::add_context_rule(context_type, name, valid_until, signers, policies: Map<Address, Val>) — packages/accounts/src/smart_account/mod.rs:238-248',
+} as const;
 
 /** Default synthesis configuration. Conservative but demo-friendly. */
 export const DEFAULT_SYNTH_CONFIG: SynthConfig = {
@@ -180,9 +264,76 @@ export interface ArgumentConstraintPolicy {
 /** The synthesised policy set. */
 export type PolicySpec = SpendingLimitPolicy | FrequencyLimitPolicy | ArgumentConstraintPolicy;
 
+/**
+ * A policy bound to an installable OZ context rule, in the shape
+ * `add_context_rule` consumes: a policy contract address (unknown until
+ * deployment, hence `null`) mapped to its install params. `installParams`
+ * uses the REAL parameter names of the target contract; `paramsSource` cites
+ * the file:line (at {@link OZ_TARGET}) the shape was verified against.
+ */
+export interface StockSpendingLimitBinding {
+  readonly policy: 'stock:spending_limit';
+  /** Deployed policy-wrapper contract address; null until deployed. */
+  readonly address: null;
+  /** Exact `SpendingLimitAccountParams` field names and types. */
+  readonly installParams: {
+    /** i128 — max spend within the period, smallest token unit. */
+    readonly spending_limit: bigint;
+    /** u32 — rolling window length in LEDGERS (not seconds). */
+    readonly period_ledgers: number;
+  };
+  readonly paramsSource: string;
+  /** How the params were derived from the recording (transparency). */
+  readonly derivedFrom: {
+    readonly asset: TokenRef;
+    readonly observedGrossOut: bigint;
+    readonly spendWindowSecs: number;
+  };
+}
+
+/** The generated custom frequency policy, bound with its own install params. */
+export interface CustomFrequencyLimitBinding {
+  readonly policy: 'custom:FrequencyLimitPolicy';
+  /** Deployed policy contract address; null until deployed. */
+  readonly address: null;
+  /** Exact `FrequencyLimitParams` field names of the generated Rust. */
+  readonly installParams: {
+    /** u64 — rolling window length in seconds. */
+    readonly window_secs: number;
+    /** u32 — max enforcements within the window. */
+    readonly max_calls: number;
+  };
+  readonly paramsSource: string;
+}
+
+export type OzPolicyBinding = StockSpendingLimitBinding | CustomFrequencyLimitBinding;
+
+/**
+ * One installable OZ context rule. Mirrors what `add_context_rule` accepts
+ * (see {@link OZ_TARGET}): a rule binds exactly ONE contract via
+ * `CallContract` and carries no function names — the observed functions are
+ * recorded in {@link observedFns} for review, and function-level narrowing
+ * must live in a policy (RECONCILIATION row 14).
+ */
+export interface OzContextRule {
+  readonly contextType: { readonly type: 'CallContract'; readonly contract: string };
+  /** Rule name, capped at 20 BYTES (OZ `MAX_NAME_SIZE`). */
+  readonly name: string;
+  /**
+   * `valid_until` as a LEDGER SEQUENCE (u32), computed from the recording's
+   * ledger + the configured lifetime at {@link ESTIMATED_SECS_PER_LEDGER}.
+   * Null when the recording has no ledger; must be recomputed from the live
+   * ledger head at install time either way (the recording ledger is past).
+   */
+  readonly validUntilLedger: number | null;
+  /** Functions observed on this contract in the recording (advisory). */
+  readonly observedFns: readonly string[];
+  readonly policies: readonly OzPolicyBinding[];
+}
+
 /** The scope of the context rule: which (contract, fn) pairs are permitted. */
 export interface ContextRule {
-  /** Short human-readable rule name (OZ caps names at 20 chars). */
+  /** Short human-readable rule name (OZ caps names at 20 bytes, `MAX_NAME_SIZE`). */
   readonly name: string;
   /** Exact (contract, fn) pairs the rule authorises. */
   readonly scopedCalls: readonly { readonly contract: string; readonly fnName: string }[];
@@ -202,6 +353,20 @@ export interface SmartAccountSpec {
    * advisory and the simulator flags — rather than denies — violations.
    */
   readonly argumentScopes: readonly ArgumentConstraintPolicy[];
+  /**
+   * Installable OZ context rules derived from the recording: one
+   * `CallContract` rule per called contract, plus one per token the subject
+   * authorized a direct `transfer` on (each `require_auth` in the tree is its
+   * own context at `__check_auth` — FACTS §2.5). Spend caps compose onto the
+   * token rules as stock `spending_limit` params.
+   */
+  readonly ozContextRules: readonly OzContextRule[];
+  /**
+   * Composition deltas: places where this spec's internal model and the real
+   * OZ primitives differ (unit conversions, caps the stock policies cannot
+   * express). These are expected mapping notes, not warnings.
+   */
+  readonly notes: readonly string[];
   /** Non-fatal advisories surfaced to the user (e.g. policy-count over the cap). */
   readonly warnings: readonly string[];
   /** The config the spec was synthesised with (echoed for reproducibility). */

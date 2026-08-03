@@ -1,0 +1,102 @@
+---
+title: Security
+description: The threat model, the protections that exist in v0, and the audit commitment.
+---
+
+import StatusBadge from '../../components/StatusBadge.astro';
+import UnauditedBanner from '../../components/UnauditedBanner.astro';
+
+<StatusBadge status="in-development" />
+
+<UnauditedBanner />
+
+Policywright generates artefacts that, once installed, run as authorization
+logic over user funds. Security is therefore treated as a first-class
+deliverable. This page separates what is **in the code today** (each claim
+linked to its source) from what is **planned**.
+
+## Protections in v0
+
+- **No key custody in the pipeline.** The synthesis and verification pipeline
+  never asks for, holds, or uses a secret key
+  ([README](https://github.com/kunal-drall/policywright#acknowledgements) states
+  this plainly; the only network calls in
+  [src/](https://github.com/kunal-drall/policywright/tree/main/src) are
+  read-only RPC reads and read-only metadata simulations). The one deliberate
+  exception lives outside `src/`: the opt-in testnet deploy script
+  ([scripts/deploy-testnet.sh](https://github.com/kunal-drall/policywright/blob/main/scripts/deploy-testnet.sh))
+  reads the operator's own testnet secret from the gitignored `.env`, deploys
+  the generated policy contract to TESTNET only (it refuses any other
+  network), and never prints the key.
+- **Code-first, deploy-second.** Every output is a file written locally for
+  review — `spec.json`, `context-rule.json`, `summary.txt`, the generated
+  Rust, and the dry-run report. No code path in `src/` submits anything
+  on-chain
+  ([src/demo.ts](https://github.com/kunal-drall/policywright/blob/main/src/demo.ts)).
+- **Deny-case verification.** The dry-run harness auto-generates adjacent
+  scenarios that must fail — over the spend cap, an unseen function, after
+  expiry, over the frequency cap — plus an unobserved swap route that is denied
+  when argument constraints (`--constrain-arguments`) are enabled and
+  advisory-flagged otherwise. The demo asserts every scenario behaves as
+  expected, exiting non-zero otherwise
+  ([src/simulate.ts](https://github.com/kunal-drall/policywright/blob/main/src/simulate.ts)).
+- **Unaudited output is stamped as such.** Every generated Rust file carries an
+  `ILLUSTRATIVE / UNAUDITED — NOT DEPLOY-READY` header, with a source comment
+  instructing that the wording never be weakened
+  ([src/rust-policy.ts](https://github.com/kunal-drall/policywright/blob/main/src/rust-policy.ts)).
+- **Storage segregation in the generated template.** The generated policy keys
+  all persistent state by `(smart_account, context_rule_id)`, so state cannot
+  bleed across accounts or rules:
+
+  ```rust title="Generated FrequencyLimitPolicy.rs — storage keying (excerpt)"
+  /// Storage key for the frequency limit policy, segregated per
+  /// (smart account, context rule id) exactly like the stock policies.
+  #[contracttype]
+  pub enum FrequencyLimitStorageKey {
+      /// Storage key for frequency limit data of a smart account context rule.
+      AccountContext(Address, u32),
+  }
+  ```
+
+  All state (params and call history) lives in one `FrequencyLimitData` struct
+  under that key; the crate's tests pin the isolation in both directions
+  ([contracts/frequency-limit-policy](https://github.com/kunal-drall/policywright/tree/main/contracts/frequency-limit-policy)).
+
+- **Defensive input handling.** The fixture loader validates every field and
+  fails with a precise `FixtureError`; the RPC adapter narrows every decoded
+  value and returns typed, actionable `RecorderError`s (`BAD_INPUT` /
+  `TX_NOT_FOUND` / `NETWORK` / `DECODE_FAILED`) for not-found, failed-on-chain,
+  wrong-network, and malformed-envelope cases; synthesis config is validated up
+  front
+  ([src/sources/fixture.ts](https://github.com/kunal-drall/policywright/blob/main/src/sources/fixture.ts),
+  [src/sources/rpc.ts](https://github.com/kunal-drall/policywright/blob/main/src/sources/rpc.ts),
+  [src/synthesizer.ts](https://github.com/kunal-drall/policywright/blob/main/src/synthesizer.ts)).
+- **Deterministic money math.** Token amounts are `bigint` end to end — no
+  float rounding — and synthesis takes the clock as an explicit parameter, so
+  results are reproducible and testable. The synthesizer and simulator are held
+  to ≥90% line-coverage thresholds via `npm run test:coverage`
+  ([vitest.config.ts](https://github.com/kunal-drall/policywright/blob/main/vitest.config.ts)).
+
+## Threat model
+
+The categories below frame both v0's existing mitigations and the scope of the
+planned audit. In each row, the middle column describes only what exists in the
+repository today; the audit work is planned.
+
+| Threat                                    | v0 mitigation (in the code today)                                                                              | Planned audit focus                                  |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Malicious or malformed input transactions | Defensive fixture validation; strict hash/envelope/event narrowing with explicit errors in the RPC adapter      | Adversarial input corpus against the synthesizer     |
+| Over-broad scope inference                | Exact `(contract, fn)` binding; gross-outflow caps; no cap only for inflow-only assets; advisory flags for gaps | Systematic review of every inference rule            |
+| Storage collisions across accounts/rules  | Generated template keys state by `(smart_account, context_rule_id)`                                             | Verification of the generated storage patterns       |
+| Policy bypass                             | Fixed-order dry-run checks with auto-generated deny cases asserted by the demo and tests                        | Bypass hunting on synthesizer output and templates   |
+| Incorrect lifecycle handling              | Generated code implements the real OZ `Policy` trait, compiled + unit-tested against `stellar-accounts` v0.7.2 (`install` / `enforce` / `uninstall`; `enforce` rejects by panic) | Conformance review against the OZ accounts lifecycle |
+
+## Audit commitment
+
+The audit commitment is: **a third-party audit of the synthesizer logic itself
+and the generated policy templates, via the SCF Audit Bank at Tranche 3.**
+
+That audit is a Tranche 3 target and has not happened. Until it has, every
+generated contract remains stamped illustrative and unaudited, and this site
+carries the banner above on every page that shows generated Rust. See the
+[Roadmap](/roadmap/) for the tranche plan.

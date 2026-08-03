@@ -1,0 +1,69 @@
+---
+title: Changelog
+description: Project history, seeded from the repository's git log.
+---
+
+import StatusBadge from '../../components/StatusBadge.astro';
+
+<StatusBadge status="shipped" />
+
+Seeded from the repository's
+[commit history](https://github.com/kunal-drall/policywright/commits/main),
+which is authoritative. The project is pre-release: version `0.1.0` in
+[package.json](https://github.com/kunal-drall/policywright/blob/main/package.json),
+no tagged releases yet.
+
+## 2026-08-03 — Tranche 1 deliverables D1.1–D1.3
+
+- [`334cfc1`](https://github.com/kunal-drall/policywright/commit/334cfc1) docs: cite the D1.3 CI run
+- [`b669d06`](https://github.com/kunal-drall/policywright/commit/b669d06) docs(evidence): D1.3 delivered — compiled, tested, hash-verified testnet deploy
+- [`bdb6e03`](https://github.com/kunal-drall/policywright/commit/bdb6e03) docs: record D1.3 toolchain/deploy facts, close reconciliation rows 5 and 7
+- [`0cc40a0`](https://github.com/kunal-drall/policywright/commit/0cc40a0) ci: lint, clippy, and test the contracts workspace
+- [`4a1394b`](https://github.com/kunal-drall/policywright/commit/4a1394b) feat(scripts): testnet-only deploy script with on-chain hash verification
+- [`9331359`](https://github.com/kunal-drall/policywright/commit/9331359) feat(emitter): emit the compiled crate source as the generated policy
+- [`45fa901`](https://github.com/kunal-drall/policywright/commit/45fa901) feat(contracts): compile the generated frequency-limit policy against the real OZ Policy trait
+- [`a5015f3`](https://github.com/kunal-drall/policywright/commit/a5015f3) docs: cite the D1.2 CI run and the fork workflow-trigger caveat
+- [`e30c468`](https://github.com/kunal-drall/policywright/commit/e30c468) fix: pin the wasm-runtime chain the site lockfile dropped on macOS installs
+- [`ffa919c`](https://github.com/kunal-drall/policywright/commit/ffa919c) fix: sync the docs-site lockfile so npm ci passes in CI
+- [`ab2ed70`](https://github.com/kunal-drall/policywright/commit/ab2ed70) ci: allow manual workflow dispatch
+- [`4389e6c`](https://github.com/kunal-drall/policywright/commit/4389e6c) docs: record D1.2 evidence, close reconciliation rows 11-15
+- [`f64e472`](https://github.com/kunal-drall/policywright/commit/f64e472) feat: emit installable OZ context rules with real stock spending_limit params
+- [`2151c11`](https://github.com/kunal-drall/policywright/commit/2151c11) docs: verify the OZ install surface and one-context-per-require_auth semantics
+- [`f69879d`](https://github.com/kunal-drall/policywright/commit/f69879d) docs: track deliverables against the funded three-tranche plan; add T2 parking lot
+- [`87f64d6`](https://github.com/kunal-drall/policywright/commit/87f64d6) fix: correct the synthetic fixture hash to 64 hex chars
+- [`dad30ff`](https://github.com/kunal-drall/policywright/commit/dad30ff) docs: carry the required Audit Bank banner sentence verbatim in generated Rust
+- [`362b363`](https://github.com/kunal-drall/policywright/commit/362b363) docs: record D1.1 evidence, CAP-67 event schemas, and reconciliation status
+- [`3b28ad2`](https://github.com/kunal-drall/policywright/commit/3b28ad2) feat: harden the recording layer — multi-hash sequences, simulated path, typed errors
+- [`b663663`](https://github.com/kunal-drall/policywright/commit/b663663) docs: establish verified ground truth for toolchain, OZ model, live chain, and swap venue
+
+## 2026-07-22
+
+- [`1484632`](https://github.com/kunal-drall/policywright/commit/1484632) docs: add Vercel deploy config and DNS steps for the docs site
+- [`ace363e`](https://github.com/kunal-drall/policywright/commit/ace363e) docs: list --rpc-url in the record usage line
+- [`88af18b`](https://github.com/kunal-drall/policywright/commit/88af18b) chore: scope repo linters to the core package and ignore AppleDouble files
+- [`1f8f35d`](https://github.com/kunal-drall/policywright/commit/1f8f35d) ci: build the docs site on push and pull request
+- [`3278a7f`](https://github.com/kunal-drall/policywright/commit/3278a7f) docs: add Astro + Starlight documentation site under site/
+
+## 2026-06-25
+
+- [`3294ca9`](https://github.com/kunal-drall/policywright/commit/3294ca9) docs: finalize README and architecture for the full feature set
+- [`ceb645c`](https://github.com/kunal-drall/policywright/commit/ceb645c) docs: add a committed example run under examples/
+- [`22709a5`](https://github.com/kunal-drall/policywright/commit/22709a5) ci: run lint, format, typecheck, test, and demo on push and PR
+- [`bc530cc`](https://github.com/kunal-drall/policywright/commit/bc530cc) feat: expose SynthConfig overrides as CLI flags
+- [`c076ff9`](https://github.com/kunal-drall/policywright/commit/c076ff9) feat: add config-gated argument-level scope for swap paths
+- [`1179b2b`](https://github.com/kunal-drall/policywright/commit/1179b2b) feat: harden the live RPC adapter with SAC metadata resolution
+
+## 2026-06-09
+
+- [`37bd9fa`](https://github.com/kunal-drall/policywright/commit/37bd9fa) test: add Vitest suite for the synthesizer and simulator
+- [`598df1f`](https://github.com/kunal-drall/policywright/commit/598df1f) chore: add ESLint flat config and Prettier with lint scripts
+- [`84b40ca`](https://github.com/kunal-drall/policywright/commit/84b40ca) docs: document the pipeline, commands, and architecture
+- [`c838c13`](https://github.com/kunal-drall/policywright/commit/c838c13) feat: add dry-run simulator, demo, and CLI
+
+## 2026-06-07
+
+- [`3447225`](https://github.com/kunal-drall/policywright/commit/3447225) feat: emit spec JSON, human summary, and illustrative Rust policy
+- [`58ded3e`](https://github.com/kunal-drall/policywright/commit/58ded3e) feat: synthesize least-privilege smart-account spec from a recording
+- [`6ba8691`](https://github.com/kunal-drall/policywright/commit/6ba8691) feat: add recording layer (fixture loader and live RPC adapter)
+- [`a915f9d`](https://github.com/kunal-drall/policywright/commit/a915f9d) chore: scaffold TypeScript project and core domain types
+- [`0221c1a`](https://github.com/kunal-drall/policywright/commit/0221c1a) Initial commit

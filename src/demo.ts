@@ -21,6 +21,7 @@ const OUT_DIR = 'out';
 function writeArtifacts(
   summary: string,
   specJson: string,
+  contextRuleJson: string,
   rustPolicy: string,
   report: string,
 ): string {
@@ -28,6 +29,7 @@ function writeArtifacts(
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'summary.txt'), summary);
   writeFileSync(join(dir, 'spec.json'), `${specJson}\n`);
+  writeFileSync(join(dir, 'context-rule.json'), `${contextRuleJson}\n`);
   writeFileSync(join(dir, 'FrequencyLimitPolicy.rs'), rustPolicy);
   writeFileSync(join(dir, 'simulation-report.md'), report);
   return dir;
@@ -48,7 +50,13 @@ export function runDemo(): readonly SimulationResult[] {
   const results = scenarios.map((s) => simulateCall(spec, s.candidate));
   const report = renderReport(results);
 
-  const dir = writeArtifacts(artifacts.summary, artifacts.specJson, artifacts.rustPolicy, report);
+  const dir = writeArtifacts(
+    artifacts.summary,
+    artifacts.specJson,
+    artifacts.contextRuleJson,
+    artifacts.rustPolicy,
+    report,
+  );
 
   process.stdout.write(artifacts.summary);
   process.stdout.write('\n');

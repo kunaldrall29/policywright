@@ -1,0 +1,58 @@
+---
+title: Roadmap
+description: The three-tranche build plan — MVP, testnet expansion, mainnet launch — and where v0 stands.
+---
+
+import StatusBadge from '../../components/StatusBadge.astro';
+
+<StatusBadge status="in-development" />
+
+Policywright is built against a three-tranche plan: **MVP → Testnet →
+Mainnet**. All dates are **targets**. Deliverables that involve on-chain
+behaviour will be evidenced by contract IDs and transaction links when they
+exist; the first — the deployed generated frequency-limit policy — is evidenced
+in the deployment log in
+[evidence/EVIDENCE.md](https://github.com/kunal-drall/policywright/blob/main/evidence/EVIDENCE.md).
+
+## The three tranches
+
+| Tranche                  | Target date                | Focus              | Headline deliverables                                                                                                                                                                                       |
+| ------------------------ | -------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **T1 — MVP (testnet)**   | 31 Aug 2026 _(target)_     | Working engine     | Recording layer (live + simulated); least-privilege synthesizer (scope + composed policies + minimal permission); generated-policy compile + testnet deploy; open-source CLI + CI                             |
+| **T2 — Testnet expansion** | 15 Oct 2026 _(target)_   | Agent-usable tooling | MCP server (`record` / `synthesize` / `simulate` / `verify` tools); Claude skill; dry-run harness + argument-level scope; net-new policy codegen with storage segregation; wallet integration (testnet, end-to-end) |
+| **T3 — Mainnet launch**  | 30 Nov 2026 _(target)_     | Production         | Three documented end-to-end walkthroughs; OpenZeppelin validation of generated code; production release (versioned MCP server + packaged skill + docs); mainnet demonstration; test suite + audit readiness (audit scope submitted to the SCF Audit Bank) |
+
+## Where v0 stands
+
+Parts of the T1 and T2 scope already exist in the repository. Each item below
+is verifiable today:
+
+- Recording from the offline fixture and from a live Soroban RPC node by
+  transaction hash —
+  [src/sources/](https://github.com/kunal-drall/policywright/tree/main/src/sources)
+- The least-privilege synthesizer: exact scope binding, gross-outflow spend
+  caps, the minimal-permission inflow rule, and frequency limits —
+  [src/synthesizer.ts](https://github.com/kunal-drall/policywright/blob/main/src/synthesizer.ts)
+- The emitter: `spec.json`, `context-rule.json`, `summary.txt`, and the stamped
+  illustrative Rust policy — the same source as the compiled-and-tested crate at
+  [contracts/frequency-limit-policy](https://github.com/kunal-drall/policywright/tree/main/contracts/frequency-limit-policy) —
+  [src/emitter.ts](https://github.com/kunal-drall/policywright/blob/main/src/emitter.ts)
+- The dry-run harness with auto-generated deny cases and config-gated
+  argument-level scope —
+  [src/simulate.ts](https://github.com/kunal-drall/policywright/blob/main/src/simulate.ts)
+- The open-source CLI, Vitest suite with coverage thresholds, and CI running
+  lint → format → typecheck → test → demo —
+  [src/cli.ts](https://github.com/kunal-drall/policywright/blob/main/src/cli.ts),
+  [CI workflow](https://github.com/kunal-drall/policywright/actions/workflows/ci.yml)
+
+The remaining items are planned and have not been started in this repository:
+the MCP server, the Claude skill, net-new policy codegen with storage
+segregation, wallet integration, the walkthroughs, the OpenZeppelin validation
+pass, the mainnet demonstration, and the Audit Bank submission. (The simulated-transaction recording path shipped with D1.1; the
+generated policy compiles, tests, and deploys to testnet since D1.3.)
+
+## Proof policy
+
+Shipped claims on this site link to the repository, CI, or committed artefacts.
+When tranche deliverables land on-chain, this page will link contract IDs and
+transaction explorers as proof, in the same spirit.

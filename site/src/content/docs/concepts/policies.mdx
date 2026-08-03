@@ -1,0 +1,77 @@
+---
+title: Policies
+description: The three policy kinds Policywright synthesizes in v0, and the OZ five-policy budget.
+---
+
+import StatusBadge from '../../../components/StatusBadge.astro';
+
+<StatusBadge status="shipped" />
+
+Policies are the enforcement half of the synthesized spec: quantitative
+constraints bound to the [context rule](/concepts/context-rules/). v0
+synthesizes three policy kinds, defined in
+[src/types.ts](https://github.com/kunal-drall/policywright/blob/main/src/types.ts)
+and derived in
+[src/synthesizer.ts](https://github.com/kunal-drall/policywright/blob/main/src/synthesizer.ts).
+
+## `spending-limit`
+
+Bounds the **gross outflow** of a single asset over a rolling window. It mirrors
+OpenZeppelin's stock `spending_limit` building block: the spec carries the
+asset, the cap, the window, and — for transparency — the observed gross outflow
+the cap was derived from.
+
+- The cap is `observed gross outflow × capMultiplier`, rounded up so it never
+  sits below what was observed (default multiplier 1.1).
+- One policy is emitted per asset that left the account. Assets that only
+  flowed in get no policy at all — see the
+  [least-privilege model](/concepts/least-privilege/).
+
+```json title="examples/spec.json — the BLND spending limit"
+{
+  "kind": "spending-limit",
+  "asset": {
+    "contractId": "CBG4EBVOIT77IWCNJOL4BVAAOIVAH7W7YSLK5UI4N6SGNFSHGSEXMA2W",
+    "symbol": "BLND",
+    "decimals": 7,
+    "resolved": true
+  },
+  "cap": "13579500000",
+  "windowSecs": 86400,
+  "observedGrossOut": "12345000000"
+}
+```
+
+## `frequency-limit`
+
+Bounds how often the scoped calls may run within a rolling window (default: at
+most 5 calls per 24 hours, both configurable). One frequency-limit policy is
+always emitted. It is also the policy rendered as the illustrative generated
+Rust starting point — see
+[compose-first](/concepts/compose-first/) for why that one is generated rather
+than composed.
+
+## `argument-constraint`
+
+Constrains a positional argument of a specific call to an observed allow-set.
+In v0 this covers the swap `path` argument: the set of token addresses the
+observed route touched. The observation is **always** recorded on the spec (as
+`argumentScopes`); whether it is enforced depends on config:
+
+- **`--constrain-arguments` off (default)** — advisory. A candidate swap
+  routing through an unobserved token is **flagged**, not denied.
+- **`--constrain-arguments` on** — enforced. The same candidate is **denied**.
+
+It constrains the token _set_, not the ordering, hop count, or amounts — amount
+bounds are the spending limit's job
+([README: argument-level scope](https://github.com/kunal-drall/policywright#argument-level-scope---constrain-arguments)).
+
+## The five-policy budget
+
+OpenZeppelin smart accounts allow at most **5 policies per context rule**
+(`MAX_POLICIES` in
+[src/types.ts](https://github.com/kunal-drall/policywright/blob/main/src/types.ts)).
+When a synthesized spec exceeds that — for example, a recording with six
+distinct outflow assets — the synthesizer emits a warning on the spec rather
+than failing, and suggests splitting the flow across multiple rules
+([test: warns when the policy count exceeds the OZ max](https://github.com/kunal-drall/policywright/blob/main/test/synthesizer.test.ts)).

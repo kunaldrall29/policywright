@@ -4,3 +4,9 @@ out/
 examples/
 package-lock.json
 .claude/
+
+# Rust workspace: cargo fmt owns formatting there.
+contracts/
+
+# The docs site is its own package with its own tooling and CI job.
+site/

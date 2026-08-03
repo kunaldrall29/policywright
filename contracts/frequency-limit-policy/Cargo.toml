@@ -1,0 +1,20 @@
+[package]
+name = "frequency-limit-policy"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+publish = false
+
+[lib]
+# "lib" in addition to "cdylib" so the integration tests under tests/ can
+# import the crate (the same pairing the stellar-accounts package uses).
+crate-type = ["lib", "cdylib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true }
+stellar-accounts = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
