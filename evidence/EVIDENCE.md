@@ -463,6 +463,7 @@ Stated plainly so no reviewer has to infer it.
 | MCP server, Claude skill, wallet integration    | T2      | Not started ([T2-NOTES.md](../docs/T2-NOTES.md)) |
 | Net-new policy codegen with storage segregation | T2      | Not started                                      |
 | Argument-level scope                            | T2      | Landed early, off by default                     |
+| T2 demo script (narrative teleprompter)         | T2      | Pack ready — [docs/demo-script-t2.md](../docs/demo-script-t2.md) (Prompt 6 amended: [docs/prompts/prompt-6.md](../docs/prompts/prompt-6.md)). Agent/wallet beats gated until those surfaces ship; Scenario 3 omit. |
 | Audit, mainnet, OZ validation, walkthroughs     | T3      | Not started                                      |
 
 ---

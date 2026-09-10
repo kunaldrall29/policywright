@@ -78,6 +78,16 @@ core modules free of I/O side effects makes that cheap.
 
 Packaged agent skill over the MCP server. Not started.
 
+### T2 recorded-demo script
+
+Narrative teleprompter (not a feature tour): [demo-script-t2.md](demo-script-t2.md).
+Generated from the amended Prompt 6 beat list in [prompts/prompt-6.md](prompts/prompt-6.md)
+— MCP + skill merged into one agent conversation; proof-wall close; conditional
+Prompt R Scenario 3 shot only if it actually passed. `[EXPECT]` blocks for the
+dry-run / emit beats were captured 2026-09-10 from the real CLI. Do not film the
+agent or Freighter beats until those surfaces exist; do not invent an on-chain
+reject.
+
 ### Wallet integration (testnet, end-to-end)
 
 Installing a synthesized rule + policies on a real smart account and signing
