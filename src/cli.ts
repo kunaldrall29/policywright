@@ -12,9 +12,11 @@
  * flag left out keeps its documented default from DEFAULT_SYNTH_CONFIG.
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { emit } from './emitter.js';
 import { runDemo } from './demo.js';
+import { prepareInstall } from './install/prepare.js';
+import { pipelineVerify } from './pipeline.js';
 import { loadFixture } from './sources/fixture.js';
 import { loadRecordedTx } from './sources/recorded.js';
 import { recordFromHashes, tokenResolverFor } from './sources/rpc.js';
@@ -59,7 +61,27 @@ Synthesis flags (defaults in parentheses):
   --frequency-max <count>    max calls per frequency window (${D.frequencyMaxCalls})
   --constrain-arguments      enforce swap-path token set (default off: flag only)
 
-Networks default to testnet.`;
+  npm run cli -- verify    [synth-flags]  dry-run + assert expected decisions
+  npm run cli -- prepare-install --context-rule <file> --smart-account <C...>
+                                          [install-flags]
+                                          rebuild validUntilLedger from the live
+                                          ledger head and emit a Freighter plan
+                                          (does NOT submit — human signs in wallet/)
+
+Install flags:
+  --context-rule <file>              emitted context-rule.json (required)
+  --smart-account <C...>             smart-account contract to call add_context_rule on
+  --frequency-policy <C...>          deployed FrequencyLimitPolicy address
+  --spending-limit-policy <C...>     deployed spending_limit wrapper address
+  --signer <G...>                    signer to attach (repeatable)
+  --network <n>                      testnet|mainnet|futurenet (testnet)
+  --rpc-url <url>                    RPC override
+  --lifetime <secs>                  override context-rule lifetime for validUntil
+  --output <file>                    write the install plan JSON
+
+Networks default to testnet.
+MCP: npm run mcp  (stdio server — see skills/policywright/SKILL.md)
+Wallet: serve wallet/ and load the prepare-install plan in Freighter.`;
 
 /** Minimal `--key value` / `--key=value` flag parser. */
 function parseFlags(args: readonly string[]): Map<string, string> {
@@ -172,6 +194,62 @@ function cmdSimulate(config: SynthConfig): void {
   process.stdout.write(`${renderReport(results)}\n`);
 }
 
+function cmdVerify(config: SynthConfig, inputPath: string | undefined): void {
+  const result = pipelineVerify({
+    ...(inputPath === undefined ? {} : { inputPath }),
+    config,
+  });
+  process.stdout.write(`${result.report}\n`);
+  if (!result.ok) {
+    process.stderr.write(`verify failed:\n${result.failures.map((f) => `  - ${f}`).join('\n')}\n`);
+    process.exitCode = 1;
+    return;
+  }
+  process.stdout.write(`verify ok — ${result.results.length} scenarios matched expectations.\n`);
+}
+
+async function cmdPrepareInstall(rest: readonly string[]): Promise<void> {
+  const flags = parseFlags(rest);
+  const contextRulePath = flags.get('context-rule');
+  const smartAccount = flags.get('smart-account');
+  if (contextRulePath === undefined || smartAccount === undefined) {
+    throw badInput(
+      'prepare-install requires --context-rule <file> and --smart-account <C...>',
+    );
+  }
+  const signers: string[] = [];
+  for (let i = 0; i < rest.length; i += 1) {
+    if (rest[i] === '--signer') {
+      const value = rest[i + 1];
+      if (value !== undefined && !value.startsWith('--')) {
+        signers.push(value);
+        i += 1;
+      }
+    }
+  }
+  const frequencyPolicyAddress = flags.get('frequency-policy');
+  const spendingLimitPolicyAddress = flags.get('spending-limit-policy');
+  const rpcUrl = flags.get('rpc-url');
+  const lifetimeRaw = flags.get('lifetime');
+  const plan = await prepareInstall({
+    contextRulePath,
+    smartAccount,
+    network: parseNetwork(flags.get('network')),
+    signers,
+    ...(frequencyPolicyAddress === undefined ? {} : { frequencyPolicyAddress }),
+    ...(spendingLimitPolicyAddress === undefined ? {} : { spendingLimitPolicyAddress }),
+    ...(rpcUrl === undefined ? {} : { rpcUrl }),
+    ...(lifetimeRaw === undefined ? {} : { lifetimeSecs: numberFlag(flags, 'lifetime', 0) }),
+  });
+  const json = `${JSON.stringify(plan, null, 2)}\n`;
+  const output = flags.get('output');
+  if (output !== undefined) {
+    writeFileSync(output, json);
+    process.stderr.write(`wrote ${output} (readyToSign=${plan.readyToSign})\n`);
+  }
+  process.stdout.write(json);
+}
+
 /** Positional (non-flag) arguments, skipping each flag's value token. */
 function positionalArgs(rest: readonly string[]): string[] {
   const positional: string[] = [];
@@ -248,6 +326,14 @@ async function main(): Promise<void> {
     }
     case 'simulate':
       cmdSimulate(parseSynthConfig(parseFlags(rest)));
+      return;
+    case 'verify': {
+      const flags = parseFlags(rest);
+      cmdVerify(parseSynthConfig(flags), flags.get('input'));
+      return;
+    }
+    case 'prepare-install':
+      await cmdPrepareInstall(rest);
       return;
     case 'record':
       await cmdRecord(rest);

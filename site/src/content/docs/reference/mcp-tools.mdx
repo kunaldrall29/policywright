@@ -1,10 +1,51 @@
 ---
 title: MCP tools
-description: MCP tool schemas for Policywright.
+description: MCP tool schemas for Policywright — record, synthesize, simulate, verify, prepare_install.
 ---
 
 import StatusBadge from '../../../components/StatusBadge.astro';
 
-<StatusBadge status="planned" />
+<StatusBadge status="available" />
 
-Planned — Tranche 2.
+Policywright exposes an [MCP](https://modelcontextprotocol.io/) stdio server so an
+agent (Claude Desktop, Cursor, etc.) can drive the same pipeline as the CLI.
+
+```bash
+npm run mcp
+```
+
+Pair with the packaged skill at [`skills/policywright/SKILL.md`](https://github.com/kunaldrall29/policywright/blob/main/skills/policywright/SKILL.md).
+
+## Tools
+
+| Tool | Maps to | Notes |
+| ---- | ------- | ----- |
+| `record` | `recordFromHashes` / simulation ingest | Multi-hash merge for claim→swap flows |
+| `synthesize` | `synthesize` + `emit` | Returns summary, spec, context-rule, UNAUDITED Rust |
+| `simulate` | dry-run suite | Flip `constrainArguments` for flag→deny on unobserved routes |
+| `verify` | demo assertions | `ok: false` + `failures[]` when scenarios drift |
+| `prepare_install` | live ledger recompute | Builds a Freighter plan — **does not submit** |
+
+## `prepare_install` → Freighter
+
+`prepare_install` recomputes `validUntilLedger` from the live ledger head (the
+recording ledger is always past), fills policy addresses you pass, and lists
+blockers until the plan is `readyToSign: true`. Serve the wallet UI and load the
+plan:
+
+```bash
+npm run wallet
+# open http://localhost:4173 — Freighter must be on Testnet
+```
+
+The human confirms the Freighter popup. Policywright never auto-deploys.
+
+## Skill conversation shape
+
+1. Natural ask with tx hashes → `record` → `synthesize`
+2. Clarifying question on the spend cap (observed vs allow more)
+3. Plain-language rule + UNAUDITED banner
+4. `simulate` (constraints off, then on) to show what the rule denies
+5. `prepare_install` → Freighter sign in `wallet/`
+
+See [docs/demo-script-t2.md](https://github.com/kunaldrall29/policywright/blob/main/docs/demo-script-t2.md).

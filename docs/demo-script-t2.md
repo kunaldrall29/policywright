@@ -19,10 +19,10 @@ retention.
 | Beat | Surface | Status in this repo (2026-09-10) |
 | ---- | ------- | -------------------------------- |
 | Cold open | repo, CI, docs roadmap | Recordable |
-| Agent asks (D2.1+D2.2) | MCP server + Claude skill | **GATE** — not started ([T2-NOTES.md](T2-NOTES.md)). Do not film a staged agent. |
+| Agent asks (D2.1+D2.2) | MCP server + Claude skill | **Ready to film** — `npm run mcp` + [skills/policywright/SKILL.md](../skills/policywright/SKILL.md). Use morning-of hashes. |
 | Deny table (D2.3) | dry-run + `--constrain-arguments` | Recordable via CLI today (agent wraps the same harness when shipped) |
 | Artefacts (D2.4) | `context-rule.json` + generated Rust | Recordable |
-| Install / Freighter / chain (D2.5) | wallet + on-chain install | **GATE** — not started. Prompt R Scenario 3: **not run** → omit the on-chain over-cap shot; say nothing implied. |
+| Install / Freighter / chain (D2.5) | wallet + on-chain install | **UI ready** — `prepare-install` + [wallet/](../wallet/). Needs funded smart account + policy addresses on the recording machine. Scenario 3: omit unless Prompt R actually passed. |
 | Proof wall | `EVIDENCE.md`, docs site | Recordable (T1 criteria today; flip T2 rows when evidenced) |
 
 Until the gates clear, record only the recordable beats and cut the gated ones
@@ -78,10 +78,9 @@ CI badge: green on `main` (verify the morning you record).
 **Lower-third:** `D2.2 · Claude skill` (switch to `D2.1 · MCP tools` while tool
 calls are on screen, then back)
 
-**GATE:** MCP server (`record` / `synthesize` / `simulate` / `verify`) and the
-Claude skill are **not started**. Skip this beat on camera until both ship.
-The dialogue below is the prescribed shape — film it only against the real
-skill + MCP, with visible timestamps on tool latency.
+**Status:** MCP server and Claude skill are in-repo. Film this beat against a
+real MCP session (`npm run mcp`) with the skill loaded; keep visible timestamps
+on tool latency. Substitute morning-of hashes / amounts into the ask.
 
 **SHOW**
 
@@ -275,10 +274,12 @@ attaches — show that file for the OZ citation shot.
 
 **Lower-third:** `D2.5 · Install`
 
-**GATE:** Wallet integration (Freighter sign → install on a smart account →
-on-chain enforce) is **not started**. Do not film this beat until it ships.
+**Status:** `prepare-install` + [wallet/](../wallet/) are in-repo. Film this beat
+once you have a funded testnet smart account, deployed policy addresses, and
+Freighter on the recording machine. Morning-of: run `prepare-install`, load the
+plan in the wallet UI, hold the Freighter popup.
 
-**Prescribed shape (film only against the real path):**
+**Prescribed shape:**
 
 1. Simulate-first (reuse Beat 2 table on screen).
 2. Freighter popup — **hold a full beat**; that frame proves client-side
