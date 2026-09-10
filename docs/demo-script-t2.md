@@ -349,6 +349,12 @@ record this shortened cut from the recordable beats only:
 
 Do **not** label a CLI rehearsal as the T2 submission video.
 
+**Rehearsal capture (2026-09-10):** a ~2:07 screen recording of this shortened cut
+was produced in the cloud agent environment (cold open → simulate flag/deny flip →
+Rust banner + stock `spending_limit` OZ citation → EVIDENCE gates → docs homepage).
+It is walkthrough evidence for the pack, not the submission cut. Agent / Freighter /
+Scenario 3 frames were correctly omitted.
+
 ---
 
 ## Appendix B — Morning-of refresh commands
