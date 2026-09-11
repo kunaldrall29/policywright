@@ -99,9 +99,12 @@ Install preparer + Freighter UI landed:
 - [wallet/](../wallet/) — static page that loads the plan, connects Freighter,
   and signs `add_context_rule`. Human signs; nothing auto-deploys.
 
-Still required for a live demo cut: a funded testnet smart account, deployed
-policy wrapper addresses, and Freighter on the recording machine. Scenario 3
-(on-chain over-cap reject) remains conditional on that setup.
+Demo machine (2026-09-11): Freighter 5.48.0 loaded via BiDi; Testnet wallet
+imported as G-key `GCODZM…VZAK`; OZ smart account C-address
+`CALCGK5…CTV5W` deployed (Delegated signer = that G-key). Public addresses:
+[evidence/demo-addresses.md](../evidence/demo-addresses.md). Still needed for
+a full install cut: deployed policy wrapper address(es) wired into
+`prepare-install`. Scenario 3 (on-chain over-cap reject) remains conditional.
 
 ### Simulated-transaction recording path
 

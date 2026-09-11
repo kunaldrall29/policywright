@@ -231,9 +231,11 @@ unaudited.
 
 ¹ T2 in progress: dry-run + `--constrain-arguments` (early); MCP server
 (`npm run mcp`), Claude skill (`skills/policywright/SKILL.md`), and Freighter
-install plan + UI (`prepare-install`, `wallet/`) are in-repo. Remaining: net-new
-policy codegen with storage segregation, and a live funded-smart-account install
-on the recording machine. See [docs/T2-NOTES.md](docs/T2-NOTES.md).
+install plan + UI (`prepare-install`, `wallet/`) are in-repo. Demo addresses
+(Freighter G-key + smart-account C-address) are in
+[evidence/demo-addresses.md](evidence/demo-addresses.md). Remaining: net-new
+policy codegen with storage segregation, and a filmed live install using those
+addresses. See [docs/T2-NOTES.md](docs/T2-NOTES.md).
 
 ## Acknowledgements
 

@@ -460,7 +460,7 @@ Stated plainly so no reviewer has to infer it.
 | Deploy a generated policy to testnet            | T1      | **Delivered** (D1.3, 2026-08-03)                 |
 | Resolve `valid_until` ledger-sequence mismatch  | T1      | **Delivered** (D1.2, 2026-08-03)                 |
 | Resolve context-rule scope granularity          | T1      | **Delivered** (D1.2, 2026-08-03)                 |
-| MCP server, Claude skill, wallet integration    | T2      | Landed — MCP (`npm run mcp`), skill (`skills/policywright/SKILL.md`), Freighter plan+UI (`prepare-install`, `wallet/`). Live smart-account install still needs funded testnet account + policy addresses. ([T2-NOTES.md](../docs/T2-NOTES.md)) |
+| MCP server, Claude skill, wallet integration    | T2      | Landed — MCP (`npm run mcp`), skill (`skills/policywright/SKILL.md`), Freighter plan+UI (`prepare-install`, `wallet/`). Demo machine: Freighter Testnet + C-address `CALCGK5…` ([demo-addresses.md](demo-addresses.md)). Live install cut still needs policy addresses in the plan. ([T2-NOTES.md](../docs/T2-NOTES.md)) |
 | Net-new policy codegen with storage segregation | T2      | Not started                                      |
 | Argument-level scope                            | T2      | Landed early, off by default                     |
 | T2 demo script (narrative teleprompter)         | T2      | Pack ready — [docs/demo-script-t2.md](../docs/demo-script-t2.md) (Prompt 6 amended: [docs/prompts/prompt-6.md](../docs/prompts/prompt-6.md)). Agent/wallet beats gated until those surfaces ship; Scenario 3 omit. |

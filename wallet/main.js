@@ -49,7 +49,7 @@ document.getElementById('btn-sample').addEventListener('click', () => {
     {
       schemaVersion: 1,
       network: 'testnet',
-      smartAccount: 'CXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      smartAccount: 'CALCGK5RRRVOV5XUGRUPX3NT5XZF3XUDL3SHM7ZXZEPNFMLFGJNCTV5W',
       readyToSign: false,
       ledger: {
         latestLedger: 0,

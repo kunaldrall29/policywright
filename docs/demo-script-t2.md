@@ -274,10 +274,12 @@ attaches — show that file for the OZ citation shot.
 
 **Lower-third:** `D2.5 · Install`
 
-**Status:** `prepare-install` + [wallet/](../wallet/) are in-repo. Film this beat
-once you have a funded testnet smart account, deployed policy addresses, and
-Freighter on the recording machine. Morning-of: run `prepare-install`, load the
-plan in the wallet UI, hold the Freighter popup.
+**Status:** `prepare-install` + [wallet/](../wallet/) are in-repo. Demo machine
+has Freighter (Testnet) + funded G signer + C-address
+`CALCGK5RRRVOV5XUGRUPX3NT5XZF3XUDL3SHM7ZXZEPNFMLFGJNCTV5W` (see
+[evidence/demo-addresses.md](../evidence/demo-addresses.md)). Still need
+policy wrapper addresses in the plan. Morning-of: run `prepare-install`, load
+the plan in the wallet UI, hold the Freighter popup.
 
 **Prescribed shape:**
 
