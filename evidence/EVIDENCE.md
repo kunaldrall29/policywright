@@ -508,3 +508,16 @@ every row is re-checkable against the testnet explorer links.
 | Upload tx                                     | (wasm already on-chain; no upload tx)                                                                                                                                             |
 | Deploy tx                                     | [`35ddaeaa935af7233dbee577942edfcea2abda1ab12c1cd37d51b4c432236af0`](https://stellar.expert/explorer/testnet/tx/35ddaeaa935af7233dbee577942edfcea2abda1ab12c1cd37d51b4c432236af0) |
 | Deployer                                      | `GATUKCIMLZTQHNW3IFRNJWJZ5YDT5S2VFSTYMW3EXCKNPYVAYQCKKS3W`                                                                                                                        |
+
+## T2 narrated demo capture (2026-09-11)
+
+Recorded a continuous ~4:30 demo with TTS narration muxed in:
+
+- Cold open (G/C testnet addresses)
+- MCP + skill clarification (cap ×1.1)
+- Simulate deny table (constrainArguments off → on)
+- Artefacts (stock OZ spending_limit citation + UNAUDITED Rust banner)
+- prepare-install plan + wallet UI + explorer C-address
+- Evidence proof wall; Scenario 3 omitted (Prompt R not run)
+
+Artifact (cloud agent): `t2_full_demo_narrated.mp4`

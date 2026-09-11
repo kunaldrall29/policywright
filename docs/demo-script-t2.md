@@ -338,6 +338,10 @@ less evidence/EVIDENCE.md
 
 ---
 
+
+
+**Narrated capture (2026-09-11):** continuous ~4:30 cut with TTS audio muxed — agent artifact `t2_full_demo_narrated.mp4`. Scenario 3 omitted.
+
 ## Appendix A — CLI rehearsal cut (recordable today)
 
 If you need a same-day assembly draft before MCP / skill / Freighter land,
