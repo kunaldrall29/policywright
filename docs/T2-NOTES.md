@@ -70,21 +70,41 @@ policies, with tests.
 
 ### MCP server
 
-Tools: `record`, `synthesize`, `simulate`, `verify`. Not started. The CLI
-surface in [src/cli.ts](../src/cli.ts) is the obvious thing to wrap; keeping the
-core modules free of I/O side effects makes that cheap.
+Tools: `record`, `synthesize`, `simulate`, `verify`, `prepare_install`.
+Landed as [src/mcp/server.ts](../src/mcp/server.ts) over the shared
+[src/pipeline.ts](../src/pipeline.ts). Start with `npm run mcp`.
 
 ### Claude skill
 
-Packaged agent skill over the MCP server. Not started.
+Packaged agent skill over the MCP server: [skills/policywright/SKILL.md](../skills/policywright/SKILL.md).
+Enforces clarifying questions, UNAUDITED banner, simulate-before-install.
+
+### T2 recorded-demo script
+
+Narrative teleprompter (not a feature tour): [demo-script-t2.md](demo-script-t2.md).
+Generated from the amended Prompt 6 beat list in [prompts/prompt-6.md](prompts/prompt-6.md)
+— MCP + skill merged into one agent conversation; proof-wall close; conditional
+Prompt R Scenario 3 shot only if it actually passed. `[EXPECT]` blocks for the
+dry-run / emit beats were captured 2026-09-10 from the real CLI. Agent + Freighter
+beats are filmable against `npm run mcp` / `wallet/` once morning-of hashes and a
+funded testnet smart account are available; do not invent an on-chain reject.
 
 ### Wallet integration (testnet, end-to-end)
 
-Installing a synthesized rule + policies on a real smart account and signing
-through it. Not started. This is the point at which
-[FACTS.md §2.2](FACTS.md) (`valid_until` is a ledger sequence, not a Unix
-timestamp) stops being a documentation issue and becomes a blocking bug — the
-conversion needs a ledger-sequence estimate from the network.
+Install preparer + Freighter UI landed:
+
+- [src/install/prepare.ts](../src/install/prepare.ts) — `prepareInstall` /
+  `npm run cli -- prepare-install` recomputes `validUntilLedger` from the live
+  ledger head (FACTS.md §2.2) and emits a Freighter plan with blockers.
+- [wallet/](../wallet/) — static page that loads the plan, connects Freighter,
+  and signs `add_context_rule`. Human signs; nothing auto-deploys.
+
+Demo machine (2026-09-11): Freighter 5.48.0 loaded via BiDi; Testnet wallet
+imported as G-key `GCODZM…VZAK`; OZ smart account C-address
+`CALCGK5…CTV5W` deployed (Delegated signer = that G-key). Public addresses:
+[evidence/demo-addresses.md](../evidence/demo-addresses.md). Still needed for
+a full install cut: deployed policy wrapper address(es) wired into
+`prepare-install`. Scenario 3 (on-chain over-cap reject) remains conditional.
 
 ### Simulated-transaction recording path
 

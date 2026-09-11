@@ -20,9 +20,14 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "mcp": "tsx src/mcp/server.ts",
+    "verify": "tsx src/cli.ts verify",
+    "prepare-install": "tsx src/cli.ts prepare-install",
+    "wallet": "npx --yes serve wallet -p 4173"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@stellar/stellar-sdk": "15.1.0"
   },
   "devDependencies": {
@@ -36,5 +41,8 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.61.0",
     "vitest": "^3.2.6"
+  },
+  "bin": {
+    "policywright-mcp": "./dist/mcp/server.js"
   }
 }

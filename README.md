@@ -208,7 +208,7 @@ what is actually verifiable in this repository today — see
 | Tranche                    | Target      | Deliverables                                                                                                                          | Status          |
 | -------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
 | **T1 — MVP (testnet)**     | 31 Aug 2026 | Recording layer (live + simulated); least-privilege synthesizer; generated-policy compile + testnet deploy; open-source CLI + CI      | 🚧 In progress  |
-| **T2 — Testnet expansion** | 15 Oct 2026 | MCP server; Claude skill; dry-run harness + argument-level scope; net-new policy codegen with storage segregation; wallet integration | ⏳ Not started¹ |
+| **T2 — Testnet expansion** | 15 Oct 2026 | MCP server; Claude skill; dry-run harness + argument-level scope; net-new policy codegen with storage segregation; wallet integration | 🚧 In progress¹ |
 | **T3 — Mainnet launch**    | 30 Nov 2026 | Three end-to-end walkthroughs; OpenZeppelin validation; production release; mainnet demonstration; audit readiness (SCF Audit Bank)   | ⏳ Not started  |
 
 **Shipped and verifiable today**: the recording layer from the
@@ -229,11 +229,13 @@ is deployed to testnet — contract ID and hash-verification trail in the deploy
 [evidence/EVIDENCE.md](evidence/EVIDENCE.md). The deployed instance is testnet-only and
 unaudited.
 
-¹ One T2 deliverable pair landed early: the offline dry-run harness and its
-config-gated argument-level scope (`--constrain-arguments`, off by default) — the T2 row
-lists "dry-run harness + argument-level scope". The rest of T2 — MCP server, Claude
-skill, storage-segregated codegen, wallet integration — has not been started. See
-[docs/T2-NOTES.md](docs/T2-NOTES.md).
+¹ T2 in progress: dry-run + `--constrain-arguments` (early); MCP server
+(`npm run mcp`), Claude skill (`skills/policywright/SKILL.md`), and Freighter
+install plan + UI (`prepare-install`, `wallet/`) are in-repo. Demo addresses
+(Freighter G-key + smart-account C-address) are in
+[evidence/demo-addresses.md](evidence/demo-addresses.md). Remaining: net-new
+policy codegen with storage segregation, and a filmed live install using those
+addresses. See [docs/T2-NOTES.md](docs/T2-NOTES.md).
 
 ## Acknowledgements
 

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>policywright · Freighter install</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">policywright · testnet install</p>
+      <h1>Sign the synthesized rule</h1>
+      <p class="lede">
+        Load an install plan from <code>prepare_install</code>, confirm Freighter is on
+        <strong>Testnet</strong>, then approve the popup. policywright never auto-deploys —
+        the human signs.
+      </p>
+
+      <section class="panel">
+        <h2>1 · Install plan</h2>
+        <p class="hint">
+          Paste the JSON from <code>npm run cli -- prepare-install …</code> or the MCP
+          <code>prepare_install</code> tool.
+        </p>
+        <textarea id="plan" spellcheck="false" placeholder="{ &quot;schemaVersion&quot;: 1, … }"></textarea>
+        <div class="row">
+          <button type="button" id="btn-sample">Load sample shape</button>
+          <button type="button" id="btn-parse" class="primary">Parse plan</button>
+        </div>
+        <pre id="plan-status" class="status" hidden></pre>
+      </section>
+
+      <section class="panel" id="review" hidden>
+        <h2>2 · Review</h2>
+        <dl id="review-dl"></dl>
+        <ul id="blockers"></ul>
+      </section>
+
+      <section class="panel" id="sign-panel" hidden>
+        <h2>3 · Freighter</h2>
+        <p class="hint">
+          Freighter must be installed in this browser and set to Testnet. Hold the popup on
+          camera for the demo, then approve.
+        </p>
+        <div class="row">
+          <button type="button" id="btn-connect" class="primary">Connect Freighter</button>
+          <button type="button" id="btn-sign" disabled>Sign add_context_rule</button>
+        </div>
+        <pre id="wallet-status" class="status" hidden></pre>
+      </section>
+
+      <p class="foot">
+        UNAUDITED · testnet only · generated policies are illustrative until the Tranche 3
+        Audit Bank audit.
+      </p>
+    </main>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

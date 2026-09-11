@@ -460,9 +460,10 @@ Stated plainly so no reviewer has to infer it.
 | Deploy a generated policy to testnet            | T1      | **Delivered** (D1.3, 2026-08-03)                 |
 | Resolve `valid_until` ledger-sequence mismatch  | T1      | **Delivered** (D1.2, 2026-08-03)                 |
 | Resolve context-rule scope granularity          | T1      | **Delivered** (D1.2, 2026-08-03)                 |
-| MCP server, Claude skill, wallet integration    | T2      | Not started ([T2-NOTES.md](../docs/T2-NOTES.md)) |
+| MCP server, Claude skill, wallet integration    | T2      | Landed — MCP (`npm run mcp`), skill (`skills/policywright/SKILL.md`), Freighter plan+UI (`prepare-install`, `wallet/`). Demo machine: Freighter Testnet + C-address `CALCGK5…` ([demo-addresses.md](demo-addresses.md)). Live install cut still needs policy addresses in the plan. ([T2-NOTES.md](../docs/T2-NOTES.md)) |
 | Net-new policy codegen with storage segregation | T2      | Not started                                      |
 | Argument-level scope                            | T2      | Landed early, off by default                     |
+| T2 demo script (narrative teleprompter)         | T2      | Pack ready — [docs/demo-script-t2.md](../docs/demo-script-t2.md) (Prompt 6 amended: [docs/prompts/prompt-6.md](../docs/prompts/prompt-6.md)). Agent/wallet beats gated until those surfaces ship; Scenario 3 omit. |
 | Audit, mainnet, OZ validation, walkthroughs     | T3      | Not started                                      |
 
 ---
@@ -507,3 +508,16 @@ every row is re-checkable against the testnet explorer links.
 | Upload tx                                     | (wasm already on-chain; no upload tx)                                                                                                                                             |
 | Deploy tx                                     | [`35ddaeaa935af7233dbee577942edfcea2abda1ab12c1cd37d51b4c432236af0`](https://stellar.expert/explorer/testnet/tx/35ddaeaa935af7233dbee577942edfcea2abda1ab12c1cd37d51b4c432236af0) |
 | Deployer                                      | `GATUKCIMLZTQHNW3IFRNJWJZ5YDT5S2VFSTYMW3EXCKNPYVAYQCKKS3W`                                                                                                                        |
+
+## T2 narrated demo capture (2026-09-11)
+
+Recorded a continuous ~4:30 demo with TTS narration muxed in:
+
+- Cold open (G/C testnet addresses)
+- MCP + skill clarification (cap ×1.1)
+- Simulate deny table (constrainArguments off → on)
+- Artefacts (stock OZ spending_limit citation + UNAUDITED Rust banner)
+- prepare-install plan + wallet UI + explorer C-address
+- Evidence proof wall; Scenario 3 omitted (Prompt R not run)
+
+Artifact (cloud agent): `t2_full_demo_narrated.mp4`
