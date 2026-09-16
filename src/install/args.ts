@@ -66,8 +66,7 @@ export function encodeInstallParamsVal(
     if (spendingLimit === undefined || periodLedgers === undefined) {
       throw badInput('spending_limit installParams require spending_limit + period_ledgers');
     }
-    const periodNum =
-      typeof periodLedgers === 'number' ? periodLedgers : Number(periodLedgers);
+    const periodNum = typeof periodLedgers === 'number' ? periodLedgers : Number(periodLedgers);
     if (!Number.isFinite(periodNum)) {
       throw badInput('spending_limit installParams.period_ledgers must be a number');
     }

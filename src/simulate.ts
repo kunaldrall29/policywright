@@ -333,10 +333,7 @@ const RESULT_ICON = (d: SimulationResult['decision']): string =>
   d === 'permit' ? '✅' : d === 'flag' ? '⚠️' : '⛔';
 
 /** Render dry-run results as a Markdown report. */
-export function renderReport(
-  results: readonly SimulationResult[],
-  meta?: ReportMeta,
-): string {
+export function renderReport(results: readonly SimulationResult[], meta?: ReportMeta): string {
   const lines: string[] = [];
   lines.push('# policywright dry-run report');
   lines.push('');
@@ -430,9 +427,7 @@ export function renderComposeAndGenerateReport(
   lines.push('npm run --silent cli -- simulate --input examples/live/recorded-claim-swap.json');
   lines.push('```');
   lines.push('');
-  lines.push(
-    'See [docs/compose-vs-generate.md](../../docs/compose-vs-generate.md) for the',
-  );
+  lines.push('See [docs/compose-vs-generate.md](../../docs/compose-vs-generate.md) for the');
   lines.push('compose-first decision boundary and proof links.');
   lines.push('');
   return lines.join('\n');

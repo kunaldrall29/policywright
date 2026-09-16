@@ -41,10 +41,7 @@ function defaultWasmPath(cwd: string): string {
   return resolve(cwd, 'contracts/target/wasm32v1-none/release/oz_smart_account.wasm');
 }
 
-function appendEvidence(
-  evidencePath: string,
-  result: AccountCreateResult,
-): void {
+function appendEvidence(evidencePath: string, result: AccountCreateResult): void {
   mkdirSync(dirname(evidencePath), { recursive: true });
   const stamp = new Date().toISOString().slice(0, 10);
   const block = `
@@ -122,16 +119,14 @@ export function createSmartAccount(input: AccountCreateInput = {}): AccountCreat
   }
 
   // Prefer the deploy (second) tx when upload+deploy both appear.
-  const allTx = [...`${deploy.stdout}\n${deploy.stderr}`.matchAll(
-    /explorer\/testnet\/tx\/([0-9a-f]{64})/gi,
-  )].map((m) => m[1]!);
+  const allTx = [
+    ...`${deploy.stdout}\n${deploy.stderr}`.matchAll(/explorer\/testnet\/tx\/([0-9a-f]{64})/gi),
+  ].map((m) => m[1]!);
   const uploadTxHash = allTx.length >= 2 ? allTx[0]! : null;
   const deployTxHash = allTx.length >= 1 ? allTx[allTx.length - 1]! : deploy.txHash;
 
   let wasmHash: string | null = null;
-  const hashMatch = `${deploy.stdout}\n${deploy.stderr}`.match(
-    /wasm hash ([0-9a-f]{64})/i,
-  );
+  const hashMatch = `${deploy.stdout}\n${deploy.stderr}`.match(/wasm hash ([0-9a-f]{64})/i);
   if (hashMatch?.[1] !== undefined) {
     wasmHash = hashMatch[1];
   } else {
@@ -152,8 +147,7 @@ export function createSmartAccount(input: AccountCreateInput = {}): AccountCreat
     deployTxHash,
     explorer: {
       contract: `${TESTNET_EXPLORER_CONTRACT}${smartAccount}`,
-      deployTx:
-        deployTxHash !== null ? `${TESTNET_EXPLORER_TX}${deployTxHash}` : null,
+      deployTx: deployTxHash !== null ? `${TESTNET_EXPLORER_TX}${deployTxHash}` : null,
     },
   };
 

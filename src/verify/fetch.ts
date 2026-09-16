@@ -41,16 +41,7 @@ function invokeJson(
   cwd: string,
 ): unknown {
   const result = runStellarCli(
-    [
-      'contract',
-      'invoke',
-      '--id',
-      smartAccount,
-      '--network',
-      network,
-      '--',
-      ...fnArgs,
-    ],
+    ['contract', 'invoke', '--id', smartAccount, '--network', network, '--', ...fnArgs],
     secret,
     { cwd },
   );
@@ -77,9 +68,7 @@ function invokeJson(
   }
 }
 
-function parseContextType(
-  raw: unknown,
-): OnChainContextRule['contextType'] {
+function parseContextType(raw: unknown): OnChainContextRule['contextType'] {
   if (raw === 'Default') {
     return { type: 'Default' };
   }
@@ -89,11 +78,7 @@ function parseContextType(
   if (isRecord(raw) && raw['type'] === 'Default') {
     return { type: 'Default' };
   }
-  if (
-    isRecord(raw) &&
-    raw['type'] === 'CallContract' &&
-    typeof raw['contract'] === 'string'
-  ) {
+  if (isRecord(raw) && raw['type'] === 'CallContract' && typeof raw['contract'] === 'string') {
     return { type: 'CallContract', contract: raw['contract'] };
   }
   throw badInput(`unrecognized on-chain context_type: ${JSON.stringify(raw)}`);
@@ -105,10 +90,7 @@ function classifyPolicy(
   spendingLimitPolicyAddress: string | undefined,
 ): string | undefined {
   if (address === frequencyPolicyAddress) return 'custom:FrequencyLimitPolicy';
-  if (
-    spendingLimitPolicyAddress !== undefined &&
-    address === spendingLimitPolicyAddress
-  ) {
+  if (spendingLimitPolicyAddress !== undefined && address === spendingLimitPolicyAddress) {
     return 'stock:spending_limit';
   }
   return undefined;
@@ -140,8 +122,7 @@ function fetchFrequencyParams(
     const windowSecs = raw['window_secs'];
     const maxCalls = raw['max_calls'];
     return {
-      window_secs:
-        typeof windowSecs === 'string' ? Number(windowSecs) : windowSecs,
+      window_secs: typeof windowSecs === 'string' ? Number(windowSecs) : windowSecs,
       max_calls: maxCalls,
     };
   } catch {
@@ -189,9 +170,7 @@ function fetchSpendingParams(
 /**
  * Fetch an {@link OnChainSnapshot} for a smart account via RPC/stellar-cli.
  */
-export function fetchOnChainSnapshot(
-  input: FetchOnChainSnapshotInput,
-): Promise<OnChainSnapshot> {
+export function fetchOnChainSnapshot(input: FetchOnChainSnapshotInput): Promise<OnChainSnapshot> {
   const network: Network = input.network ?? 'testnet';
   const cwd = input.cwd ?? process.cwd();
   let secret = input.sourceSecret;
@@ -206,8 +185,7 @@ export function fetchOnChainSnapshot(
     throw badInput('--smart-account must be a C… address');
   }
 
-  const frequencyPolicyAddress =
-    input.frequencyPolicyAddress ?? DEFAULT_FREQUENCY_POLICY;
+  const frequencyPolicyAddress = input.frequencyPolicyAddress ?? DEFAULT_FREQUENCY_POLICY;
   const spendingLimitPolicyAddress = input.spendingLimitPolicyAddress;
 
   const countRaw = invokeJson(
@@ -254,30 +232,12 @@ export function fetchOnChainSnapshot(
       if (address === null || !address.startsWith('C')) {
         continue;
       }
-      const kind = classifyPolicy(
-        address,
-        frequencyPolicyAddress,
-        spendingLimitPolicyAddress,
-      );
+      const kind = classifyPolicy(address, frequencyPolicyAddress, spendingLimitPolicyAddress);
       let installParams: Record<string, unknown> | undefined;
       if (kind === 'custom:FrequencyLimitPolicy') {
-        installParams = fetchFrequencyParams(
-          address,
-          id,
-          input.smartAccount,
-          network,
-          secret,
-          cwd,
-        );
+        installParams = fetchFrequencyParams(address, id, input.smartAccount, network, secret, cwd);
       } else if (kind === 'stock:spending_limit') {
-        installParams = fetchSpendingParams(
-          address,
-          id,
-          input.smartAccount,
-          network,
-          secret,
-          cwd,
-        );
+        installParams = fetchSpendingParams(address, id, input.smartAccount, network, secret, cwd);
       }
       policies.push({
         address,

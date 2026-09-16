@@ -8,12 +8,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { badInput, networkError } from './sources/errors.js';
 
-export const DEFAULT_FREQUENCY_POLICY =
-  'CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP';
+export const DEFAULT_FREQUENCY_POLICY = 'CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP';
 
 export const TESTNET_EXPLORER_TX = 'https://stellar.expert/explorer/testnet/tx/';
-export const TESTNET_EXPLORER_CONTRACT =
-  'https://stellar.expert/explorer/testnet/contract/';
+export const TESTNET_EXPLORER_CONTRACT = 'https://stellar.expert/explorer/testnet/contract/';
 
 /** Load `.env` key/value pairs without printing secrets. */
 export function loadDotEnv(cwd: string = process.cwd()): Record<string, string> {
@@ -49,9 +47,7 @@ export function requireTestnetIdentity(
   const env = loadDotEnv(cwd);
   const network = networkFlag ?? env['STELLAR_NETWORK'] ?? 'testnet';
   if (network !== 'testnet') {
-    throw badInput(
-      `account:create / install are TESTNET ONLY (refusing network=${network})`,
-    );
+    throw badInput(`account:create / install are TESTNET ONLY (refusing network=${network})`);
   }
   const secretKey = env['STELLAR_SECRET_KEY'];
   const publicKey = env['STELLAR_PUBLIC_KEY'];

@@ -20,11 +20,7 @@ function run(args: string[]): string {
 const lines: string[] = [];
 
 lines.push('## garbage hash', run(['record', 'not-a-hash', '--network', 'testnet']), '');
-lines.push(
-  '## nonexistent 64-hex',
-  run(['record', 'a'.repeat(64), '--network', 'testnet']),
-  '',
-);
+lines.push('## nonexistent 64-hex', run(['record', 'a'.repeat(64), '--network', 'testnet']), '');
 lines.push('## empty sequence', run(['record', '--network', 'testnet']), '');
 const H = 'acf256a0688e7f9c36520f4fc20cfa924d1b2e593033d85b0e443ce770b2d452';
 lines.push('## duplicates', run(['record', H, H, '--network', 'testnet']), '');

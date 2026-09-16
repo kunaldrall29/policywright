@@ -7,12 +7,12 @@ tests.
 
 ## Decision rule
 
-| Observed constraint | Stock expressible? | Action |
-| ------------------- | ------------------ | ------ |
+| Observed constraint                                                    | Stock expressible?                                                                                                     | Action                                                                                                                                  |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | Gross outflow of a token the subject authorized a direct `transfer` on | Yes — OZ `spending_limit` meters `fn_name == "transfer"` on a `CallContract(token)` rule (`spending_limit.rs:222-294`) | **Compose** `stock:spending_limit` with real install params `{ spending_limit: i128, period_ledgers: u32 }` (`spending_limit.rs:88-94`) |
-| Call frequency (max N enforcements per wall-clock window) | No stock counterpart | **Generate** `FrequencyLimitPolicy` (`contracts/frequency-limit-policy`) with `{ window_secs, max_calls }` |
-| Spend cap without a subject-authorized direct transfer | No — stock would panic `NotAllowed` on non-`transfer` contexts | **DELTA note** only (offline dry-run still caps; no rejectable install params, no invented spend contract) |
-| Swap-path / argument / function-name narrowing | No stock counterpart | Offline advisory or `--constrain-arguments` deny today; on-chain codegen is T2 follow-on ([T2-NOTES](T2-NOTES.md)) |
+| Call frequency (max N enforcements per wall-clock window)              | No stock counterpart                                                                                                   | **Generate** `FrequencyLimitPolicy` (`contracts/frequency-limit-policy`) with `{ window_secs, max_calls }`                              |
+| Spend cap without a subject-authorized direct transfer                 | No — stock would panic `NotAllowed` on non-`transfer` contexts                                                         | **DELTA note** only (offline dry-run still caps; no rejectable install params, no invented spend contract)                              |
+| Swap-path / argument / function-name narrowing                         | No stock counterpart                                                                                                   | Offline advisory or `--constrain-arguments` deny today; on-chain codegen is T2 follow-on ([T2-NOTES](T2-NOTES.md))                      |
 
 Implemented in [`src/synthesizer.ts`](../src/synthesizer.ts) (`deriveOzContextRules`).
 The site primer is [compose-first](../site/src/content/docs/concepts/compose-first.mdx).
@@ -21,10 +21,10 @@ The site primer is [compose-first](../site/src/content/docs/concepts/compose-fir
 
 From [`examples/live/recorded-claim-swap.json`](../examples/live/recorded-claim-swap.json):
 
-| Artifact | Role | Proof |
-| -------- | ---- | ----- |
-| [`examples/live/context-rule.json`](../examples/live/context-rule.json) | Composed `pw:xfer:native` → `stock:spending_limit` `{ spending_limit: "11000000", period_ledgers: 17280 }` with OZ `paramsSource` citation; generated frequency bindings on `pw:swap` / `pw:harvest` | Field-by-field OZ install checks in [`test/oz-context-rules.test.ts`](../test/oz-context-rules.test.ts) |
-| [`contracts/frequency-limit-policy`](../contracts/frequency-limit-policy) | Net-new stateful policy; storage keyed by `(smart_account, context_rule_id)` | `cargo test` in `contracts/`; emitter lock in [`test/rust-policy.test.ts`](../test/rust-policy.test.ts) |
+| Artifact                                                                  | Role                                                                                                                                                                                                 | Proof                                                                                                   |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| [`examples/live/context-rule.json`](../examples/live/context-rule.json)   | Composed `pw:xfer:native` → `stock:spending_limit` `{ spending_limit: "11000000", period_ledgers: 17280 }` with OZ `paramsSource` citation; generated frequency bindings on `pw:swap` / `pw:harvest` | Field-by-field OZ install checks in [`test/oz-context-rules.test.ts`](../test/oz-context-rules.test.ts) |
+| [`contracts/frequency-limit-policy`](../contracts/frequency-limit-policy) | Net-new stateful policy; storage keyed by `(smart_account, context_rule_id)`                                                                                                                         | `cargo test` in `contracts/`; emitter lock in [`test/rust-policy.test.ts`](../test/rust-policy.test.ts) |
 
 Both compile: TypeScript synthesis + emit stay green under `npm test`; the Rust
 crate under `cargo test` (contracts workspace).
@@ -53,13 +53,13 @@ npm run --silent cli -- simulate --input examples/live/recorded-claim-swap.json
 
 [`test/compose-boundary.test.ts`](../test/compose-boundary.test.ts) asserts:
 
-| Case | Expectation |
-| ---- | ----------- |
-| Stock-expressible spend | `stock:spending_limit` on the token rule; never a custom spend policy |
-| Frequency-style | Always `custom:FrequencyLimitPolicy` |
-| Mixed (called contracts + transfer token) | Frequency on call rules; spending_limit on the transfer token rule |
-| Live sequence | Same partition + harness permit / over-cap deny / frequency deny |
-| Committed report | Byte-stable vs `renderComposeAndGenerateReport` |
+| Case                                      | Expectation                                                           |
+| ----------------------------------------- | --------------------------------------------------------------------- |
+| Stock-expressible spend                   | `stock:spending_limit` on the token rule; never a custom spend policy |
+| Frequency-style                           | Always `custom:FrequencyLimitPolicy`                                  |
+| Mixed (called contracts + transfer token) | Frequency on call rules; spending_limit on the transfer token rule    |
+| Live sequence                             | Same partition + harness permit / over-cap deny / frequency deny      |
+| Committed report                          | Byte-stable vs `renderComposeAndGenerateReport`                       |
 
 ## Why compose-first stays permanent
 

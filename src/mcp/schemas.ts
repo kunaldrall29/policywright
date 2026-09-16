@@ -56,8 +56,7 @@ export const TOOL_INPUT_SCHEMAS = {
         description: 'Subject G…/C… address movements are attributed to.',
       },
       fromSimulation: {
-        description:
-          'Saved simulateTransaction request/response document (alternative to hashes).',
+        description: 'Saved simulateTransaction request/response document (alternative to hashes).',
       },
       recordedTx: {
         description: 'Inline RecordedTx to re-load (skips network — for tests/fixtures).',

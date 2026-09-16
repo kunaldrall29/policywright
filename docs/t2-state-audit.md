@@ -4,12 +4,12 @@ Produced 2026-09-16 against `main` @ `26b4582` (pre-T2-completion work) and
 the partial remote branch `origin/cursor/t2-mcp-skill-freighter-34ef` (not
 merged). Status vocabulary:
 
-| Status | Meaning |
-| ------ | ------- |
-| COMPLETE-verified | Criterion met and re-checked this session |
-| EXISTS-unverified | Code/docs present; not yet re-proven this session |
-| PARTIAL | Some pieces exist; criterion not literally reproducible |
-| MISSING | Not in tree on the working branch |
+| Status            | Meaning                                                 |
+| ----------------- | ------------------------------------------------------- |
+| COMPLETE-verified | Criterion met and re-checked this session               |
+| EXISTS-unverified | Code/docs present; not yet re-proven this session       |
+| PARTIAL           | Some pieces exist; criterion not literally reproducible |
+| MISSING           | Not in tree on the working branch                       |
 
 External ground truth refreshed in [FACTS.md](FACTS.md) (Gate 5+, 2026-09-16).
 Assumption deltas for T2: [RECONCILIATION-T2.md](RECONCILIATION-T2.md).
@@ -164,12 +164,12 @@ demo recording is Phase 6.
 
 ## Chain / artifact retention (2026-09-16)
 
-| Artifact | Status |
-| -------- | ------ |
-| Policy contract `CDSVPSTS…` instance + wasm | **Alive** on testnet (getLedgerEntries) |
-| Deploy/upload tx hashes (`5ac3320d…`, `35ddaeaa…`) | **Aged out** of Soroban RPC retention; still on Horizon / explorers |
-| Claim/swap hashes (`acf256a0…`, `2dcff661…`) | **Aged out** of RPC; committed captures under `examples/live/` are the reproduction path |
-| Fresh same-day hashes for video | **Needed** (Phase 6 recording notes) |
+| Artifact                                           | Status                                                                                   |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Policy contract `CDSVPSTS…` instance + wasm        | **Alive** on testnet (getLedgerEntries)                                                  |
+| Deploy/upload tx hashes (`5ac3320d…`, `35ddaeaa…`) | **Aged out** of Soroban RPC retention; still on Horizon / explorers                      |
+| Claim/swap hashes (`acf256a0…`, `2dcff661…`)       | **Aged out** of RPC; committed captures under `examples/live/` are the reproduction path |
+| Fresh same-day hashes for video                    | **Needed** (Phase 6 recording notes)                                                     |
 
 ---
 

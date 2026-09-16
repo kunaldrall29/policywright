@@ -13,9 +13,7 @@ import {
 } from '../src/install/args.js';
 import { prepareInstall } from '../src/install/prepare.js';
 
-const LIVE_CONTEXT_RULE = JSON.parse(
-  readFileSync('examples/live/context-rule.json', 'utf8'),
-) as {
+const LIVE_CONTEXT_RULE = JSON.parse(readFileSync('examples/live/context-rule.json', 'utf8')) as {
   contextRules: Array<{
     name: string;
     contextType: { type: string; contract: string };

@@ -538,10 +538,7 @@ function nodeMentionsSubject(
  * True when `subject` appears as envelope source, transfer counterparty, top
  * level call party, or anywhere in an authorization tree.
  */
-export function subjectAppearsInSequence(
-  decoded: readonly DecodedTx[],
-  subject: string,
-): boolean {
+export function subjectAppearsInSequence(decoded: readonly DecodedTx[], subject: string): boolean {
   for (const tx of decoded) {
     if (tx.sourceAccount === subject) {
       return true;
