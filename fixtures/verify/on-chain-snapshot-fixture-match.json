@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "smartAccount": "CABJN4UUYDTF6C2G3WQJCWLG4KNQS2EVLCORKPWMIMSKYPU3FVNFCBS2",
+  "network": "testnet",
+  "ledger": 1850421,
+  "contextRules": [
+    {
+      "id": 1,
+      "name": "pw:claim",
+      "contextType": {
+        "type": "CallContract",
+        "contract": "CCFZSK3W5W54JT2QPLBDDQ5W4JEIVBG3PUFONKE5YOMS52L6GQIPIV4V"
+      },
+      "validUntilLedger": 2368821,
+      "policies": [
+        {
+          "address": "C0000AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "policy": "custom:FrequencyLimitPolicy",
+          "installParams": {
+            "window_secs": 86400,
+            "max_calls": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "pw:swap",
+      "contextType": {
+        "type": "CallContract",
+        "contract": "CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7"
+      },
+      "validUntilLedger": 2368821,
+      "policies": [
+        {
+          "address": "C0100AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "policy": "custom:FrequencyLimitPolicy",
+          "installParams": {
+            "window_secs": 86400,
+            "max_calls": 5
+          }
+        }
+      ]
+    }
+  ],
+  "source": "fixture"
+}

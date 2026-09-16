@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "smartAccount": "CCW6R5ZKEIJJ75YT54TEHMRUYTP4XQGUI6H63EE3W65H4P4FAUICXP3Q",
+  "network": "testnet",
+  "ledger": 4336170,
+  "contextRules": [
+    {
+      "id": 1,
+      "name": "pw:swap",
+      "contextType": {
+        "type": "CallContract",
+        "contract": "CCJUD55AG6W5HAI5LRVNKAE5WDP5XGZBUDS5WNTIVDU7O264UZZE7BRD"
+      },
+      "validUntilLedger": 4336170,
+      "policies": [
+        {
+          "address": "C0000AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "policy": "custom:FrequencyLimitPolicy",
+          "installParams": {
+            "window_secs": 86400,
+            "max_calls": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "pw:harvest",
+      "contextType": {
+        "type": "CallContract",
+        "contract": "CCSLYYVQ575EAPCDOEYGVOI4NVYD2V7RP3F5HRP4LVDUWEJ4HOLVL357"
+      },
+      "validUntilLedger": 4336170,
+      "policies": [
+        {
+          "address": "C0100AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "policy": "custom:FrequencyLimitPolicy",
+          "installParams": {
+            "window_secs": 86400,
+            "max_calls": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "pw:xfer:native",
+      "contextType": {
+        "type": "CallContract",
+        "contract": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+      },
+      "validUntilLedger": 4336170,
+      "policies": [
+        {
+          "address": "C0200AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "policy": "stock:spending_limit",
+          "installParams": {
+            "spending_limit": "999",
+            "period_ledgers": 17280
+          }
+        }
+      ]
+    }
+  ],
+  "source": "fixture"
+}
