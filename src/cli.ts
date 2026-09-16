@@ -7,22 +7,24 @@
  *   record <hash...>     fetch a transaction sequence by hash (or ingest a saved
  *                        simulation with --from-simulation) and print the merged
  *                        RecordedTx
+ *   verify               diff emitted context-rule.json vs an on-chain snapshot
  *
  * synth and simulate accept SynthConfig overrides as flags (see USAGE); any
  * flag left out keeps its documented default from DEFAULT_SYNTH_CONFIG.
  */
 
 import { readFileSync } from 'node:fs';
-import { emit } from './emitter.js';
 import { runDemo } from './demo.js';
-import { loadFixture } from './sources/fixture.js';
-import { loadRecordedTx } from './sources/recorded.js';
-import { recordFromHashes, tokenResolverFor } from './sources/rpc.js';
-import { ingestSimulation } from './sources/simulation.js';
+import {
+  pipelineRecord,
+  pipelineSimulate,
+  pipelineSynthesize,
+  recordedTxToJson,
+} from './pipeline.js';
+import { renderReport } from './simulate.js';
 import { badInput } from './sources/errors.js';
-import { buildScenarios, renderReport, simulateCall } from './simulate.js';
-import { synthesize } from './synthesizer.js';
-import { DEFAULT_SYNTH_CONFIG, type Network, type RecordedTx, type SynthConfig } from './types.js';
+import { DEFAULT_SYNTH_CONFIG, type Network, type SynthConfig } from './types.js';
+import { verifyAgainstSnapshot } from './verify/diff.js';
 
 const D = DEFAULT_SYNTH_CONFIG;
 
@@ -34,6 +36,9 @@ Usage:
   npm run cli -- simulate  [synth-flags] dry-run scenarios against the spec
   npm run record -- <txHash> [<txHash> ...] [record-flags]
   npm run record -- --from-simulation <file.json> [record-flags]
+  npm run cli -- verify --context-rule <file> --on-chain-snapshot <file>
+                                          diff emitted context rules + policies
+                                          against an on-chain (or fixture) snapshot
 
 Record flags:
   --network <n>            testnet|mainnet|futurenet (testnet)
@@ -60,7 +65,13 @@ Synthesis flags (defaults in parentheses; also apply to simulate):
   --frequency-max <count>    max calls per frequency window (${D.frequencyMaxCalls})
   --constrain-arguments      enforce swap-path token set (default off: flag only)
 
-Networks default to testnet.`;
+Verify flags:
+  --context-rule <file>      emitted context-rule.json (required)
+  --on-chain-snapshot <file> on-chain snapshot JSON (required; use
+                             fixtures/verify/*.json for offline checks)
+
+Networks default to testnet. MCP: npm run mcp (stdio; exactly four tools —
+record / synthesize / simulate / verify; never install).`;
 
 /** Minimal `--key value` / `--key=value` flag parser. */
 function parseFlags(args: readonly string[]): Map<string, string> {
@@ -130,35 +141,11 @@ function parseNetwork(value: string | undefined): Network {
   return value;
 }
 
-/**
- * Serialise a RecordedTx to JSON: bigints as decimal strings, byte arguments
- * as `hex:<...>` strings (JSON.stringify would otherwise explode a Uint8Array
- * into an index-keyed object).
- */
-function recordedTxToJson(tx: RecordedTx): string {
-  return JSON.stringify(
-    tx,
-    // Must be a `function` (not arrow) to reach `this[key]`: JSON.stringify
-    // applies Buffer.prototype.toJSON BEFORE the replacer sees the value, so
-    // byte arguments must be intercepted on the holder object.
-    function (this: Record<string, unknown>, key: string, value: unknown) {
-      const raw = this[key];
-      if (raw instanceof Uint8Array) {
-        return `hex:${Buffer.from(raw).toString('hex')}`;
-      }
-      if (typeof value === 'bigint') {
-        return value.toString();
-      }
-      return value;
-    },
-    2,
-  );
-}
-
 function cmdSynth(config: SynthConfig, inputPath: string | undefined): void {
-  const tx = inputPath === undefined ? loadFixture() : loadRecordedTx(inputPath);
-  const spec = synthesize(tx, config, tx.timestamp ?? 0);
-  const artifacts = emit(tx, spec);
+  const { artifacts } = pipelineSynthesize({
+    ...(inputPath === undefined ? {} : { inputPath }),
+    config,
+  });
   process.stdout.write(artifacts.summary);
   process.stdout.write('\n--- spec.json ---\n');
   process.stdout.write(`${artifacts.specJson}\n`);
@@ -167,13 +154,14 @@ function cmdSynth(config: SynthConfig, inputPath: string | undefined): void {
 }
 
 function cmdSimulate(config: SynthConfig, inputPath: string | undefined): void {
-  const tx = inputPath === undefined ? loadFixture() : loadRecordedTx(inputPath);
-  const spec = synthesize(tx, config, tx.timestamp ?? 0);
-  const results = buildScenarios(spec, tx).map((s) => simulateCall(spec, s.candidate));
+  const { results, config: used } = pipelineSimulate({
+    ...(inputPath === undefined ? {} : { inputPath }),
+    config,
+  });
   process.stdout.write(
     `${renderReport(results, {
       ...(inputPath === undefined ? {} : { source: inputPath }),
-      constrainArguments: config.constrainArguments,
+      constrainArguments: used.constrainArguments,
     })}\n`,
   );
 }
@@ -187,7 +175,6 @@ function positionalArgs(rest: readonly string[]): string[] {
       continue;
     }
     if (arg.startsWith('--')) {
-      // `--flag value` consumes the next token; `--flag=value` does not.
       const next = rest[i + 1];
       if (!arg.includes('=') && next !== undefined && !next.startsWith('--')) {
         i += 1;
@@ -207,38 +194,68 @@ async function cmdRecord(rest: readonly string[]): Promise<void> {
   const account = flags.get('account');
   const simulationFile = flags.get('from-simulation');
 
-  let tx: RecordedTx;
+  let fromSimulation: unknown | undefined;
   if (simulationFile !== undefined) {
     if (hashes.length > 0) {
       throw badInput('--from-simulation cannot be combined with transaction hashes');
     }
-    let doc: unknown;
     try {
-      doc = JSON.parse(readFileSync(simulationFile, 'utf8'));
+      fromSimulation = JSON.parse(readFileSync(simulationFile, 'utf8'));
     } catch (cause) {
       throw badInput(
         `could not read simulation file ${simulationFile}: ${(cause as Error).message}`,
       );
     }
-    tx = await ingestSimulation(doc, {
-      network,
-      ...(account === undefined ? {} : { account }),
-      resolveToken: tokenResolverFor(network, rpcUrl),
-    });
-  } else {
-    if (hashes.length === 0) {
-      throw badInput(
-        'record requires at least one transaction hash (or --from-simulation <file>): ' +
-          'npm run record -- <txHash> [<txHash> ...]',
-      );
-    }
-    tx = await recordFromHashes(hashes, {
-      network,
-      ...(rpcUrl === undefined ? {} : { rpcUrl }),
-      ...(account === undefined ? {} : { account }),
-    });
   }
+
+  const tx = await pipelineRecord({
+    ...(hashes.length === 0 ? {} : { hashes }),
+    network,
+    ...(rpcUrl === undefined ? {} : { rpcUrl }),
+    ...(account === undefined ? {} : { account }),
+    ...(fromSimulation === undefined ? {} : { fromSimulation }),
+  });
   process.stdout.write(`${recordedTxToJson(tx)}\n`);
+}
+
+function cmdVerify(rest: readonly string[]): void {
+  const flags = parseFlags(rest);
+  const contextRulePath = flags.get('context-rule');
+  const snapshotPath = flags.get('on-chain-snapshot');
+  if (contextRulePath === undefined || snapshotPath === undefined) {
+    throw badInput(
+      'verify requires --context-rule <file> and --on-chain-snapshot <file>',
+    );
+  }
+  let emitted: unknown;
+  let snapshot: unknown;
+  try {
+    emitted = JSON.parse(readFileSync(contextRulePath, 'utf8'));
+  } catch (cause) {
+    throw badInput(
+      `could not read context-rule file ${contextRulePath}: ${(cause as Error).message}`,
+    );
+  }
+  try {
+    snapshot = JSON.parse(readFileSync(snapshotPath, 'utf8'));
+  } catch (cause) {
+    throw badInput(
+      `could not read on-chain snapshot file ${snapshotPath}: ${(cause as Error).message}`,
+    );
+  }
+  const result = verifyAgainstSnapshot({ emitted, snapshot });
+  if (!result.ok) {
+    process.stderr.write(
+      `verify failed — ${result.diffs.length} diff(s):\n` +
+        result.diffs.map((d) => `  - ${d.path}: ${d.message}`).join('\n') +
+        '\n',
+    );
+    process.exitCode = 1;
+    return;
+  }
+  process.stdout.write(
+    `verify ok — ${result.matchedRules} context rule(s) match on-chain snapshot.\n`,
+  );
 }
 
 async function main(): Promise<void> {
@@ -259,6 +276,9 @@ async function main(): Promise<void> {
     }
     case 'record':
       await cmdRecord(rest);
+      return;
+    case 'verify':
+      cmdVerify(rest);
       return;
     case undefined:
     case 'help':
