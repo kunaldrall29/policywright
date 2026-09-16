@@ -9,7 +9,10 @@ import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { MCP_SCHEMA_VERSION, TOOL_OUTPUT_FIELDS, UNAUDITED_BANNER } from '../src/mcp/schemas.js';
 
-const FIXTURE_TX = JSON.parse(readFileSync('fixtures/recorded-tx.json', 'utf8')) as unknown;
+/** Saved recorder output (not the raw bake-in fixture file — that needs loadFixture()). */
+const RECORDED_TX = JSON.parse(
+  readFileSync('examples/live/recorded-claim-swap.json', 'utf8'),
+) as unknown;
 const LIVE_CONTEXT_RULE = JSON.parse(
   readFileSync('examples/live/context-rule.json', 'utf8'),
 ) as unknown;
@@ -65,10 +68,10 @@ describe('MCP stdio server (four tools, network-free)', () => {
     expect(listed.tools).toHaveLength(4);
   });
 
-  it('record accepts an inline fixture RecordedTx (no network)', async () => {
+  it('record accepts an inline RecordedTx (no network)', async () => {
     const raw = await client.callTool({
       name: 'record',
-      arguments: { recordedTx: FIXTURE_TX },
+      arguments: { recordedTx: RECORDED_TX },
     });
     expect(raw.isError).not.toBe(true);
     const body = parseToolJson(raw as never);
@@ -77,13 +80,13 @@ describe('MCP stdio server (four tools, network-free)', () => {
       expect(body).toHaveProperty(field);
     }
     const tx = body['recordedTx'] as { source: string };
-    expect(tx.source).toBe('fixture');
+    expect(tx.source).toBe('rpc');
   });
 
   it('synthesize returns notes/warnings + UNAUDITED banner', async () => {
     const raw = await client.callTool({
       name: 'synthesize',
-      arguments: { recordedTx: FIXTURE_TX },
+      arguments: {},
     });
     expect(raw.isError).not.toBe(true);
     const body = parseToolJson(raw as never);
@@ -102,7 +105,7 @@ describe('MCP stdio server (four tools, network-free)', () => {
   it('simulate returns permit/deny/flag results from the fixture', async () => {
     const raw = await client.callTool({
       name: 'simulate',
-      arguments: { recordedTx: FIXTURE_TX, constrainArguments: false },
+      arguments: { constrainArguments: false },
     });
     expect(raw.isError).not.toBe(true);
     const body = parseToolJson(raw as never);

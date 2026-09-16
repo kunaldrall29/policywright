@@ -148,14 +148,14 @@ export function parseEmittedContextRule(doc: unknown): EmittedContextRuleDoc {
       }
       return {
         policy,
-        address: address as string | null,
+        address,
         installParams: normalizeParamValue(installParams) as Record<string, unknown>,
       };
     });
     return {
       name,
       contextType: { type: 'CallContract', contract },
-      validUntilLedger: validUntilLedger as number | null,
+      validUntilLedger,
       policies,
     };
   });
@@ -262,7 +262,7 @@ export function parseOnChainSnapshot(doc: unknown): OnChainSnapshot {
       ...(typeof id === 'number' && Number.isInteger(id) ? { id } : {}),
       name,
       contextType: typedContext,
-      validUntilLedger: validUntilLedger as number | null,
+      validUntilLedger,
       policies,
     };
   });
@@ -270,7 +270,7 @@ export function parseOnChainSnapshot(doc: unknown): OnChainSnapshot {
     schemaVersion,
     smartAccount,
     network,
-    ledger: ledger as number | null,
+    ledger,
     contextRules,
     source,
   };

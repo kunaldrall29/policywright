@@ -64,7 +64,7 @@ async function main(): Promise<void> {
     },
   );
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+  server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: TOOLS.map((t) => ({
       name: t.name,
       description: t.description,
@@ -74,15 +74,16 @@ async function main(): Promise<void> {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const name = request.params.name;
-    const args = (request.params.arguments ?? {}) as Record<string, unknown>;
+    const args: Record<string, unknown> = { ...(request.params.arguments ?? {}) };
     try {
-      if (!TOOL_NAMES.includes(name as ToolName)) {
+      if (!(TOOL_NAMES as readonly string[]).includes(name)) {
         throw new Error(
           `unknown tool "${name}" — policywright exposes exactly: ${TOOL_NAMES.join(', ')}`,
         );
       }
+      const toolName = name as ToolName;
       let result: unknown;
-      switch (name as ToolName) {
+      switch (toolName) {
         case 'record':
           result = await toolRecord(args);
           break;

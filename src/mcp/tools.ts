@@ -37,7 +37,7 @@ function asStringArray(value: unknown, field: string): string[] {
 function asNetwork(value: unknown): Network | undefined {
   if (value === undefined || value === null || value === '') return undefined;
   if (value !== 'testnet' && value !== 'mainnet' && value !== 'futurenet') {
-    throw badInput(`network must be testnet|mainnet|futurenet, got ${String(value)}`);
+    throw badInput(`network must be testnet|mainnet|futurenet, got ${JSON.stringify(value)}`);
   }
   return value;
 }
