@@ -162,7 +162,9 @@ dispatched manually and cited per deliverable in
 | `contracts/`                           | Rust workspace: the compiled-and-tested frequency-limit-policy crate (source of truth for the emitted template). |
 | `scripts/deploy-testnet.sh`            | Testnet-only build + upload + deploy + hash-verify; appends the deployment log to evidence/EVIDENCE.md.          |
 
-See [docs/architecture.md](docs/architecture.md) for the design in depth.
+See [docs/architecture.md](docs/architecture.md) for the design in depth, and
+[docs/compose-vs-generate.md](docs/compose-vs-generate.md) for when the
+synthesizer composes stock OZ policies vs generates `FrequencyLimitPolicy`.
 
 ## Documentation site
 

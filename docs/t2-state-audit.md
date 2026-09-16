@@ -108,8 +108,8 @@ from documented commands; CI green.
 **Criterion:** "Generates both a composed-policy configuration and a net-new
 stateful policy contract; both compile and pass simulation."
 
-| Judgment | EXISTS-unverified → harden to COMPLETE-verified |
-| -------- | ----------------------------------------------- |
+| Judgment | COMPLETE-verified |
+| -------- | ----------------- |
 
 **Evidence:**
 
@@ -120,17 +120,17 @@ stateful policy contract; both compile and pass simulation."
   ([contracts/frequency-limit-policy](../contracts/frequency-limit-policy));
   storage keyed by `(smart_account, context_rule_id)`; emitter
   byte-equality locked in `test/rust-policy.test.ts`.
+- Dual-harness report on the live sequence:
+  [examples/live/simulation-report-compose-and-generate.md](../examples/live/simulation-report-compose-and-generate.md)
+  (permit original; deny over-cap = composed; deny repeat-within-window =
+  generated).
+- Decision-boundary tests:
+  [test/compose-boundary.test.ts](../test/compose-boundary.test.ts).
+- Docs: [docs/compose-vs-generate.md](compose-vs-generate.md) (+ site
+  [concepts/compose-first.mdx](../site/src/content/docs/concepts/compose-first.mdx)).
 - On-chain wasm hash still present (re-verified 2026-09-16 — FACTS §5 /
   Gate 3): contract `CDSVPSTS…`, wasm
   `42227f2b6150c95a7084bb7c5ff2e7a40793eae39bf0c5dc95bd752d18ee6eed`.
-
-**Gaps vs criterion / Phase 1 spec:**
-
-- No committed dual-harness report attaching both policies to one context
-  rule (permit original; deny over-cap; deny repeat-within-window).
-- No decision-boundary tests asserting compose-first partition.
-- No dedicated "when Policywright composes vs generates" docs page
-  (site has `concepts/compose-first.mdx` — needs refresh against T2 truth).
 
 ---
 
@@ -180,7 +180,8 @@ demo recording is Phase 6.
       shapes, chain retention (see Gate 5+ entries dated 2026-09-16)
 - [x] RECONCILIATION-T2.md opened for T2 assumption tracking
 
-Working conclusion: **no deliverable is COMPLETE-verified on the starting
-branch.** D2.3/D2.4 have substantial early landings; D2.1/D2.2/D2.5 need
-build-or-correct from the partial remote branch under the four-tool MCP
+Working conclusion: **D2.4 is COMPLETE-verified** on this branch (composed
+`spending_limit` + generated `FrequencyLimitPolicy`, dual harness report,
+boundary tests, docs). D2.3 dual live argument-scope reports are also on
+tree. D2.1/D2.2/D2.5 still need build-or-correct under the four-tool MCP
 invariant.
