@@ -329,13 +329,14 @@ export interface ReportMeta {
   readonly constrainArguments?: boolean;
 }
 
+const RESULT_ICON = (d: SimulationResult['decision']): string =>
+  d === 'permit' ? '✅' : d === 'flag' ? '⚠️' : '⛔';
+
 /** Render dry-run results as a Markdown report. */
 export function renderReport(
   results: readonly SimulationResult[],
   meta?: ReportMeta,
 ): string {
-  const icon = (d: SimulationResult['decision']): string =>
-    d === 'permit' ? '✅' : d === 'flag' ? '⚠️' : '⛔';
   const lines: string[] = [];
   lines.push('# policywright dry-run report');
   lines.push('');
@@ -356,9 +357,83 @@ export function renderReport(
   lines.push('| --- | --- | --- |');
   for (const r of results) {
     lines.push(
-      `| ${r.label} | ${icon(r.decision)} ${r.decision} (${r.reasonCode}) | ${r.reason} |`,
+      `| ${r.label} | ${RESULT_ICON(r.decision)} ${r.decision} (${r.reasonCode}) | ${r.reason} |`,
     );
   }
+  lines.push('');
+  return lines.join('\n');
+}
+
+/**
+ * D2.4 criterion report: both the composed stock `spending_limit` and the
+ * generated `FrequencyLimitPolicy` attach to one conceptual authorization and
+ * are exercised by the offline harness (permit original; deny over-cap;
+ * deny repeat-within-window).
+ */
+export function renderComposeAndGenerateReport(
+  results: readonly SimulationResult[],
+  source: string,
+): string {
+  const byLabel = new Map(results.map((r) => [r.label, r]));
+  const require = (label: string): SimulationResult => {
+    const r = byLabel.get(label);
+    if (r === undefined) {
+      throw new Error(`compose+generate report missing scenario "${label}"`);
+    }
+    return r;
+  };
+  const permit = require('replay recorded flow');
+  const overCap = require('over the spend cap');
+  const overFreq = require('over the frequency limit');
+
+  const row = (r: SimulationResult, constraint: string): string =>
+    `| ${r.label} | ${RESULT_ICON(r.decision)} ${r.decision} (${r.reasonCode}) | ${constraint} | ${r.reason} |`;
+
+  const lines: string[] = [
+    '# policywright dry-run report — compose + generate (D2.4)',
+    '',
+    `Source: \`${source}\``,
+    '',
+    'Criterion: *Generates both a composed-policy configuration and a net-new',
+    'stateful policy contract; both compile and pass simulation.*',
+    '',
+    'Both constraints attach to one conceptual authorization derived from this',
+    'recording (see [`context-rule.json`](./context-rule.json)):',
+    '',
+    '| Constraint | Mechanism | Install artifact |',
+    '| --- | --- | --- |',
+    '| Spend cap (native XLM) | **Composed** stock `spending_limit` | `pw:xfer:native` → `stock:spending_limit` `{ spending_limit, period_ledgers }` — OZ `spending_limit.rs:88-94` |',
+    '| Call frequency | **Generated** `FrequencyLimitPolicy` | `custom:FrequencyLimitPolicy` `{ window_secs, max_calls }` — [`contracts/frequency-limit-policy`](../../contracts/frequency-limit-policy) |',
+    '',
+    '## Criterion scenarios',
+    '',
+    '| Scenario | Decision | Constraint class | Reason |',
+    '| --- | --- | --- | --- |',
+    row(permit, '— (baseline)'),
+    row(overCap, '**composed** spending_limit'),
+    row(overFreq, '**generated** FrequencyLimitPolicy'),
+    '',
+    '## Full harness table',
+    '',
+    '| Scenario | Decision | Reason |',
+    '| --- | --- | --- |',
+  ];
+  for (const r of results) {
+    lines.push(
+      `| ${r.label} | ${RESULT_ICON(r.decision)} ${r.decision} (${r.reasonCode}) | ${r.reason} |`,
+    );
+  }
+  lines.push('');
+  lines.push('## Reproduce');
+  lines.push('');
+  lines.push('```bash');
+  lines.push('npm run --silent cli -- simulate --input examples/live/recorded-claim-swap.json');
+  lines.push('```');
+  lines.push('');
+  lines.push(
+    'See [docs/compose-vs-generate.md](../../docs/compose-vs-generate.md) for the',
+  );
+  lines.push('compose-first decision boundary and proof links.');
   lines.push('');
   return lines.join('\n');
 }
