@@ -194,7 +194,7 @@ async function cmdRecord(rest: readonly string[]): Promise<void> {
   const account = flags.get('account');
   const simulationFile = flags.get('from-simulation');
 
-  let fromSimulation: unknown | undefined;
+  let fromSimulation: unknown;
   if (simulationFile !== undefined) {
     if (hashes.length > 0) {
       throw badInput('--from-simulation cannot be combined with transaction hashes');
