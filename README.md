@@ -56,6 +56,24 @@ npm run demo
 and runs the dry-run scenarios — asserting each behaves as expected. It exits non-zero if
 any scenario deviates, so it doubles as a smoke test. It needs no network access.
 
+### Install from an `npm pack` tarball
+
+For a dependency install (no clone of this repo as the app root):
+
+```bash
+npm pack                    # writes policywright-0.1.0.tgz (runs `prepack` → build)
+# in another project:
+npm install /path/to/policywright-0.1.0.tgz
+npx policywright synth --input node_modules/policywright/examples/live/recorded-claim-swap.json
+npx policywright simulate --input node_modules/policywright/examples/live/recorded-claim-swap.json
+```
+
+The published `bin` is the compiled CLI (`dist/cli.js`). The golden live sequence
+artefact the Commands table refers to is
+[`examples/live/recorded-claim-swap.json`](examples/live/recorded-claim-swap.json)
+(committed recording — not the offline fixture). Dev scripts (`npm run cli`, etc.)
+still use `tsx` against `src/` and require a full clone + `npm ci`.
+
 ## Commands
 
 | Command                                                                                                      | What it does                                                                                                                                              |

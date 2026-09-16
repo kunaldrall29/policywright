@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * policywright command-line entry point.
  *
