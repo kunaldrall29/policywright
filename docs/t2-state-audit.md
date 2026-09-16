@@ -1,18 +1,21 @@
 # Tranche 2 state audit
 
-Produced 2026-09-16 against `main` @ `26b4582` (pre-T2-completion work) and
-the partial remote branch `origin/cursor/t2-mcp-skill-freighter-34ef` (not
-merged). Status vocabulary:
+Produced 2026-09-16 against `cursor/t2-complete-production-93d7` (post
+Phase 0–4 work). Status vocabulary:
 
 | Status            | Meaning                                                 |
 | ----------------- | ------------------------------------------------------- |
 | COMPLETE-verified | Criterion met and re-checked this session               |
+| BLOCKED-human     | Code/docs ready; criterion needs a human recording      |
 | EXISTS-unverified | Code/docs present; not yet re-proven this session       |
 | PARTIAL           | Some pieces exist; criterion not literally reproducible |
 | MISSING           | Not in tree on the working branch                       |
 
 External ground truth refreshed in [FACTS.md](FACTS.md) (Gate 5+, 2026-09-16).
 Assumption deltas for T2: [RECONCILIATION-T2.md](RECONCILIATION-T2.md).
+Evidence pack: [EVIDENCE.md](../evidence/EVIDENCE.md) D2.1–D2.5.
+Form paste: [TRANCHE2-FORM.md](../evidence/TRANCHE2-FORM.md).
+Demo script: [demo-script-t2.md](demo-script-t2.md).
 
 ---
 
@@ -21,31 +24,21 @@ Assumption deltas for T2: [RECONCILIATION-T2.md](RECONCILIATION-T2.md).
 **Criterion:** "The server runs locally and an agent calls each tool end to
 end; a reference session is recorded."
 
-| Judgment | PARTIAL → target COMPLETE-verified |
-| -------- | ---------------------------------- |
+| Judgment | COMPLETE-verified (code + stdio) · BLOCKED-human (reference session) |
+| -------- | -------------------------------------------------------------------- |
 
-**On `main`:** MISSING. No `src/mcp/`, no `@modelcontextprotocol/sdk`, no
-`npm run mcp`. Site page `site/src/content/docs/reference/mcp-tools.mdx`
-describes planned tools only.
+**Evidence (re-checked 2026-09-16):**
 
-**On remote T2 branch:** EXISTS-unverified but **non-compliant**:
+- Four tools only: `record` / `synthesize` / `simulate` / `verify` —
+  [src/mcp/server.ts](../src/mcp/server.ts); `npm run mcp`.
+- Stdio spawn tests green: [test/mcp-stdio.test.ts](../test/mcp-stdio.test.ts)
+  (8/8 in `npm test`).
+- Docs: [mcp-server.md](mcp-server.md), [mcp-determinism.md](mcp-determinism.md),
+  [mcp-reference-session.md](mcp-reference-session.md).
+- SDK `@modelcontextprotocol/sdk` **1.30.0**.
 
-- Exposes five tools including `prepare_install` — violates the permanent
-  code-first rule (MCP = exactly `record` / `synthesize` / `simulate` /
-  `verify`; never install/deploy).
-- `verify` reimplements the offline demo self-check, not on-chain
-  rule/policy diff against the emitted spec.
-- Tests call handlers directly; no stdio spawn of the server.
-- No versioned I/O schemas, no determinism map, no
-  `docs/mcp-reference-session.md`.
-
-**Verification needed (when brought to compliance):**
-
-1. Spawn stdio server; call all four tools against committed fixtures.
-2. Schema-validate inputs/outputs; assert error-code mapping.
-3. Confirm tool list length === 4 and no install/deploy tool.
-4. [BLOCKER] Human records the reference agent session per
-   `docs/mcp-reference-session.md`.
+**[BLOCKER]** Human records the reference agent session per
+`docs/mcp-reference-session.md`.
 
 ---
 
@@ -54,23 +47,17 @@ describes planned tools only.
 **Criterion:** "Skill packaged; a demo shows 'grant permission to do X from
 this transaction' producing a reviewed policy."
 
-| Judgment | PARTIAL → target COMPLETE-verified |
-| -------- | ---------------------------------- |
+| Judgment | COMPLETE-verified (package + script) · BLOCKED-human (demo recording) |
+| -------- | --------------------------------------------------------------------- |
 
-**On `main`:** MISSING.
+**Evidence:**
 
-**On remote T2 branch:** EXISTS-unverified —
+- [skills/policywright/SKILL.md](../skills/policywright/SKILL.md) — Anthropic
+  Agent Skills frontmatter (`name` + `description`).
+- Clarification triggers + no-install guardrails.
+- Demo walkthrough: [skill-demo-script.md](skill-demo-script.md).
 
-- `skills/policywright/SKILL.md` matches current Anthropic format
-  (`name` + `description` frontmatter; verified 2026-09-16 against
-  platform.claude.com / agentskills.io — FACTS Gate 5).
-- Instructs calling `prepare_install` (must be rewritten to CLI-only install).
-- Clarification triggers present but incomplete vs the approved list
-  (lifetime, multi-asset, argument constraints on/off, synthesize warnings).
-- No `docs/skill-demo-script.md` with expected tool calls per turn.
-
-**Verification needed:** package validates; dry walkthrough hits four tools +
-cap clarification; [BLOCKER] human records the skill demo conversation.
+**[BLOCKER]** Human records the skill demo conversation under `evidence/`.
 
 ---
 
@@ -80,26 +67,17 @@ cap clarification; [BLOCKER] human records the skill demo conversation.
 policy including an argument-constrained case (BLND→XLM denied when enabled);
 tests green."
 
-| Judgment | PARTIAL |
-| -------- | ------- |
+| Judgment | COMPLETE-verified |
+| -------- | ----------------- |
 
-**Evidence for PARTIAL:**
+**Evidence (commands re-run 2026-09-16):**
 
-- Core exists on `main` (landed early): `--constrain-arguments` default OFF
-  ([src/types.ts](../src/types.ts) `DEFAULT_SYNTH_CONFIG`), derivation in
-  [src/synthesizer.ts](../src/synthesizer.ts) `findPathArg` /
-  `deriveArgumentScopes`, dual flag/deny paths in
-  [src/simulate.ts](../src/simulate.ts), tests in
-  `test/synthesizer.test.ts` + `test/simulate.test.ts`.
-- Committed report [examples/simulation-report.md](../examples/simulation-report.md)
-  is **flag-mode only** (fixture, not the real claim→swap sequence).
-- BLND→XLM case exists in unit tests (`test/simulate.test.ts`) but **no
-  committed dual reports** against `examples/live/recorded-claim-swap.json`
-  showing disabled→PERMITTED+flag / enabled→DENIED.
-
-**Verification needed:** generate + commit both reports from the real sequence;
-document derivation rules + limits; criterion sentence literally reproducible
-from documented commands; CI green.
+- [examples/live/simulation-report-args-off.md](../examples/live/simulation-report-args-off.md)
+  — BLND→XLM **flag**.
+- [examples/live/simulation-report-args-on.md](../examples/live/simulation-report-args-on.md)
+  — BLND→XLM **deny**.
+- [docs/argument-scope.md](argument-scope.md).
+- `npm test` — 126 green.
 
 ---
 
@@ -113,24 +91,16 @@ stateful policy contract; both compile and pass simulation."
 
 **Evidence:**
 
-- Composed stock `spending_limit` on live artifact
-  [examples/live/context-rule.json](../examples/live/context-rule.json)
-  (`pw:xfer:native`, OZ citation in `paramsSource`).
-- Generated `FrequencyLimitPolicy` crate compiles/tests
+- Composed stock `spending_limit` on
+  [examples/live/context-rule.json](../examples/live/context-rule.json).
+- Generated `FrequencyLimitPolicy`
   ([contracts/frequency-limit-policy](../contracts/frequency-limit-policy));
-  storage keyed by `(smart_account, context_rule_id)`; emitter
-  byte-equality locked in `test/rust-policy.test.ts`.
-- Dual-harness report on the live sequence:
-  [examples/live/simulation-report-compose-and-generate.md](../examples/live/simulation-report-compose-and-generate.md)
-  (permit original; deny over-cap = composed; deny repeat-within-window =
-  generated).
-- Decision-boundary tests:
-  [test/compose-boundary.test.ts](../test/compose-boundary.test.ts).
-- Docs: [docs/compose-vs-generate.md](compose-vs-generate.md) (+ site
-  [concepts/compose-first.mdx](../site/src/content/docs/concepts/compose-first.mdx)).
-- On-chain wasm hash still present (re-verified 2026-09-16 — FACTS §5 /
-  Gate 3): contract `CDSVPSTS…`, wasm
-  `42227f2b6150c95a7084bb7c5ff2e7a40793eae39bf0c5dc95bd752d18ee6eed`.
+  storage `(smart_account, context_rule_id)`.
+- Dual harness:
+  [simulation-report-compose-and-generate.md](../examples/live/simulation-report-compose-and-generate.md).
+- [test/compose-boundary.test.ts](../test/compose-boundary.test.ts);
+  [docs/compose-vs-generate.md](compose-vs-generate.md).
+- On-chain `CDSVPSTS…` wasm `42227f2b…6eed` (alive 2026-09-16).
 
 ---
 
@@ -139,26 +109,23 @@ stateful policy contract; both compile and pass simulation."
 **Criterion:** "A testnet smart account with an installed generated policy;
 end-to-end demo recorded."
 
-| Judgment | MISSING (remote branch PARTIAL / non-spec) |
-| -------- | ------------------------------------------ |
+| Judgment | COMPLETE-verified (local-signer install + live verify) · BLOCKED-human (Freighter preferred + demo video) |
+| -------- | --------------------------------------------------------------------------------------------------------- |
 
-**On `main`:** no `account:create`, `install`, or on-chain `verify`.
+**Evidence:**
 
-**On remote T2 branch:** Freighter prepare + `wallet/` UI + demo C-address
-notes — but:
+- SA `CAXBVHXP…` deploy `8beb1d4c…`; Frequency `CDSVPSTS…`; spending wrapper
+  `CC4KFQ7S…`.
+- Install txs `5907ecbf…`, `589faaad…`, `36791fe4…` (explorer HTTP 200).
+- Live verify green (2026-09-16).
+- Docs: [smart-account-install.md](smart-account-install.md); FACTS §5.3
+  signing hierarchy (Freighter preferred; local-signer fallback labeled).
+- Fallback path; cohort-wallet track remains open.
+- Reality check: [REALITY-CHECK.md](../evidence/REALITY-CHECK.md) — S3
+  invoke-through-account BLOCKED-honest (AuthPayload); not claimed as filmed.
 
-- No `account:create` that deploys + initializes OZ smart account and
-  auto-appends evidence.
-- Install path prepares a plan; does not consume emitter output unmodified
-  into simulate-first submit with documented signing hierarchy.
-- No library `verify` that diffs on-chain rules vs emitted spec (shared by
-  CLI + MCP).
-- Demo addresses in `evidence/demo-addresses.md` need live re-check.
-
-**Verification needed:** fresh testnet `account:create` → `install` →
-`verify` green; explorer-visible rule+policies; auth entries signed
-client-side per FACTS hierarchy; [BLOCKER] interactive Freighter approval;
-demo recording is Phase 6.
+**[BLOCKER]** Freighter interactive signing; Phase 6 demo video per
+[demo-script-t2.md](demo-script-t2.md).
 
 ---
 
@@ -166,22 +133,22 @@ demo recording is Phase 6.
 
 | Artifact                                           | Status                                                                                   |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Policy contract `CDSVPSTS…` instance + wasm        | **Alive** on testnet (getLedgerEntries)                                                  |
+| Policy contract `CDSVPSTS…` instance + wasm        | **Alive** on testnet                                                                     |
 | Deploy/upload tx hashes (`5ac3320d…`, `35ddaeaa…`) | **Aged out** of Soroban RPC retention; still on Horizon / explorers                      |
 | Claim/swap hashes (`acf256a0…`, `2dcff661…`)       | **Aged out** of RPC; committed captures under `examples/live/` are the reproduction path |
-| Fresh same-day hashes for video                    | **Needed** (Phase 6 recording notes)                                                     |
+| D2.5 install + SA deploy hashes                    | **Fresh** (2026-09-16) — inside explorer; use for video                                  |
+| Sample-vault S2 hashes (`e1461011…`, `3d0113ff…`)  | **Alive** on explorer                                                                    |
 
 ---
 
-## Gate (Phase 0)
+## Gate
 
-- [x] This file complete for D2.1–D2.5
-- [x] FACTS.md refreshed for MCP SDK, skill format, wallets-kit, OZ call
-      shapes, chain retention (see Gate 5+ entries dated 2026-09-16)
-- [x] RECONCILIATION-T2.md opened for T2 assumption tracking
+- [x] This file complete for D2.1–D2.5 with COMPLETE-verified / BLOCKED-human
+- [x] FACTS.md refreshed (Gate 5+)
+- [x] RECONCILIATION-T2.md opened
+- [x] Phase 5 evidence + form; Phase 6 demo script
 
-Working conclusion: **D2.4 is COMPLETE-verified** on this branch (composed
-`spending_limit` + generated `FrequencyLimitPolicy`, dual harness report,
-boundary tests, docs). D2.3 dual live argument-scope reports are also on
-tree. D2.1/D2.2/D2.5 still need build-or-correct under the four-tool MCP
-invariant.
+Working conclusion: **D2.3 and D2.4 COMPLETE-verified.** D2.1 / D2.2 /
+D2.5 code paths COMPLETE-verified with **BLOCKED-human** remaining only for
+the human-recording set (MCP reference session, skill demo, Freighter +
+demo video).
