@@ -4,11 +4,15 @@
  * Recomputes `validUntilLedger` from the **live** ledger head — the recording
  * ledger is always in the past (FACTS.md §2.2). Used by CLI `install` (which
  * then simulates + submits) and by network-free unit tests via injected ledger.
+ *
+ * Ledger head is fetched via JSON-RPC `getLatestLedger` (not stellar-sdk
+ * `rpc.Server`), because current testnet protocol can emit XDR the pinned
+ * `@stellar/stellar-sdk` cannot decode (`SorobanCredentialsType` member 2).
  */
 
 import { readFileSync } from 'node:fs';
-import { rpc } from '@stellar/stellar-sdk';
 import { ESTIMATED_SECS_PER_LEDGER, type Network } from '../types.js';
+import { networkError } from '../sources/errors.js';
 import { buildAddContextRuleArgs, type AddContextRuleArgs } from './args.js';
 
 const RPC_URLS: Record<Network, string> = {
@@ -140,9 +144,39 @@ async function resolveLatestLedger(input: PrepareInstallInput, network: Network)
   if (input.latestLedger !== undefined) {
     return input.latestLedger;
   }
-  const server = new rpc.Server(input.rpcUrl ?? RPC_URLS[network], { allowHttp: false });
-  const latest = await server.getLatestLedger();
-  return latest.sequence;
+  const url = input.rpcUrl ?? RPC_URLS[network];
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'getLatestLedger',
+        params: null,
+      }),
+    });
+  } catch (cause) {
+    throw networkError(
+      `getLatestLedger fetch failed: ${(cause as Error).message}`,
+    );
+  }
+  if (!response.ok) {
+    throw networkError(`getLatestLedger HTTP ${response.status}`);
+  }
+  const body = (await response.json()) as {
+    result?: { sequence?: number };
+    error?: { message?: string };
+  };
+  if (body.error !== undefined) {
+    throw networkError(`getLatestLedger RPC error: ${body.error.message ?? 'unknown'}`);
+  }
+  const sequence = body.result?.sequence;
+  if (typeof sequence !== 'number' || !Number.isFinite(sequence)) {
+    throw networkError(`getLatestLedger missing sequence: ${JSON.stringify(body)}`);
+  }
+  return sequence;
 }
 
 /** Build an {@link InstallPlan} from a context-rule document + live ledger head. */

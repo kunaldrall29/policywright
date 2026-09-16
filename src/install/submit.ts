@@ -1,9 +1,13 @@
 /**
- * Submit (or dry-run) `add_context_rule` installs via stellar-cli.
+ * Submit (or dry-run) `add_context_rule` installs.
  *
- * Always simulates first (`--send=no`). On success and when not `--dry-run`,
- * re-invokes with `--send=yes`. Signing uses the FACTS.md §5.3 hierarchy:
- * Freighter preferred; this path is the labeled **local-signer fallback**.
+ * Always simulates first (`stellar contract invoke --send=no`). On success and
+ * when not `--dry-run`, submits via the Delegated-signer auth path
+ * ({@link submitAddContextRuleDelegated}) — stellar-cli alone cannot fill OZ
+ * `AuthPayload` ("Missing signing key for account C…").
+ *
+ * Signing uses the FACTS.md §5.3 hierarchy: Freighter preferred; this path is
+ * the labeled **local-signer fallback**.
  */
 
 import { writeFileSync } from 'node:fs';
@@ -14,11 +18,12 @@ import {
   TESTNET_EXPLORER_TX,
   type TestnetIdentity,
 } from '../cli-env.js';
-import { badInput, networkError } from '../sources/errors.js';
+import { badInput } from '../sources/errors.js';
 import type { InstallPlan, InstallRuleInvocation } from './prepare.js';
+import { submitAddContextRuleDelegated } from './sign-delegated.js';
 
 export const LOCAL_SIGNER_REASON =
-  'local-signer fallback: no browser Freighter in this environment; signing with .env STELLAR_SECRET_KEY via stellar-cli (FACTS.md §5.3)';
+  'local-signer fallback: no browser Freighter in this environment; signing with .env STELLAR_SECRET_KEY via OZ Delegated AuthPayload path (FACTS.md §5.3)';
 
 export interface InstallRuleResult {
   readonly name: string;
@@ -47,47 +52,49 @@ export interface InstallSubmitResult {
   readonly failedNames: readonly string[];
 }
 
-function invokeAddContextRule(
+function simulateAddContextRule(
   identity: TestnetIdentity,
   smartAccount: string,
   rule: InstallRuleInvocation,
-  send: 'no' | 'yes',
-): { ok: boolean; stdout: string; stderr: string; txHash: string | null; error: string | null } {
+): { ok: boolean; stdout: string; stderr: string; error: string | null } {
   if (rule.callArgs === null) {
     return {
       ok: false,
       stdout: '',
       stderr: '',
-      txHash: null,
       error: `rule "${rule.name}" has blockers: ${rule.blockers.join('; ')}`,
     };
   }
-  const policiesPath = join(tmpdir(), `pw-policies-${rule.name.replace(/[^a-z0-9_-]/gi, '_')}.json`);
+  const policiesPath = join(
+    tmpdir(),
+    `pw-policies-${rule.name.replace(/[^a-z0-9_-]/gi, '_')}.json`,
+  );
   writeFileSync(policiesPath, rule.callArgs.policies);
 
-  const args = [
-    'contract',
-    'invoke',
-    '--id',
-    smartAccount,
-    '--network',
-    'testnet',
-    `--send=${send}`,
-    '--',
-    'add_context_rule',
-    '--context_type',
-    rule.callArgs.contextType,
-    '--name',
-    rule.callArgs.name,
-    '--valid_until',
-    String(rule.callArgs.validUntil),
-    '--signers',
-    rule.callArgs.signers,
-    '--policies-file-path',
-    policiesPath,
-  ];
-
-  const result = runStellarCli(args, identity.secretKey);
+  const result = runStellarCli(
+    [
+      'contract',
+      'invoke',
+      '--id',
+      smartAccount,
+      '--network',
+      'testnet',
+      '--send=no',
+      '--',
+      'add_context_rule',
+      '--context_type',
+      rule.callArgs.contextType,
+      '--name',
+      rule.callArgs.name,
+      '--valid_until',
+      String(rule.callArgs.validUntil),
+      '--signers',
+      rule.callArgs.signers,
+      '--policies-file-path',
+      policiesPath,
+    ],
+    identity.secretKey,
+  );
   const redactedStderr = result.stderr.replaceAll(identity.secretKey, '<STELLAR_SECRET_KEY>');
   const redactedStdout = result.stdout.replaceAll(identity.secretKey, '<STELLAR_SECRET_KEY>');
   if (!result.ok) {
@@ -95,17 +102,10 @@ function invokeAddContextRule(
       ok: false,
       stdout: redactedStdout,
       stderr: redactedStderr,
-      txHash: result.txHash,
       error: redactedStderr.trim() || redactedStdout.trim() || `stellar exit ${result.status}`,
     };
   }
-  return {
-    ok: true,
-    stdout: redactedStdout,
-    stderr: redactedStderr,
-    txHash: result.txHash,
-    error: null,
-  };
+  return { ok: true, stdout: redactedStdout, stderr: redactedStderr, error: null };
 }
 
 export interface SubmitInstallInput {
@@ -122,7 +122,7 @@ export interface SubmitInstallInput {
  * Simulate each rule, then submit (unless dry-run). Prefer installing rules
  * that attach FrequencyLimitPolicy when doing a subset for the D2.5 criterion.
  */
-export function submitInstall(input: SubmitInstallInput): Promise<InstallSubmitResult> {
+export async function submitInstall(input: SubmitInstallInput): Promise<InstallSubmitResult> {
   const dryRun = input.dryRun === true;
   const stopOnError = input.stopOnError !== false;
   if (input.plan.network !== 'testnet') {
@@ -147,7 +147,7 @@ export function submitInstall(input: SubmitInstallInput): Promise<InstallSubmitR
 
   const results: InstallRuleResult[] = [];
   for (const rule of rules) {
-    const sim = invokeAddContextRule(input.identity, input.plan.smartAccount, rule, 'no');
+    const sim = simulateAddContextRule(input.identity, input.plan.smartAccount, rule);
     if (!sim.ok) {
       results.push({
         name: rule.name,
@@ -177,7 +177,26 @@ export function submitInstall(input: SubmitInstallInput): Promise<InstallSubmitR
       });
       continue;
     }
-    const sent = invokeAddContextRule(input.identity, input.plan.smartAccount, rule, 'yes');
+    if (rule.callArgs === null) {
+      results.push({
+        name: rule.name,
+        ok: false,
+        dryRun: false,
+        simulated: true,
+        txHash: null,
+        explorerUrl: null,
+        stdout: sim.stdout,
+        stderr: sim.stderr,
+        error: 'missing callArgs after successful simulate',
+      });
+      if (stopOnError) break;
+      continue;
+    }
+    const sent = await submitAddContextRuleDelegated({
+      smartAccount: input.plan.smartAccount,
+      secretKey: input.identity.secretKey,
+      callArgs: rule.callArgs,
+    });
     if (!sent.ok) {
       results.push({
         name: rule.name,
@@ -193,23 +212,20 @@ export function submitInstall(input: SubmitInstallInput): Promise<InstallSubmitR
       if (stopOnError) break;
       continue;
     }
-    if (sent.txHash === null) {
-      throw networkError(`install of "${rule.name}" succeeded but no tx hash on stderr`);
-    }
     results.push({
       name: rule.name,
       ok: true,
       dryRun: false,
       simulated: true,
       txHash: sent.txHash,
-      explorerUrl: `${TESTNET_EXPLORER_TX}${sent.txHash}`,
+      explorerUrl: sent.txHash !== null ? `${TESTNET_EXPLORER_TX}${sent.txHash}` : null,
       stdout: sent.stdout,
       stderr: sent.stderr,
       error: null,
     });
   }
 
-  return Promise.resolve({
+  return {
     schemaVersion: 1,
     smartAccount: input.plan.smartAccount,
     network: 'testnet',
@@ -222,5 +238,5 @@ export function submitInstall(input: SubmitInstallInput): Promise<InstallSubmitR
     results,
     installedNames: results.filter((r) => r.ok && !r.dryRun).map((r) => r.name),
     failedNames: results.filter((r) => !r.ok).map((r) => r.name),
-  });
+  };
 }
