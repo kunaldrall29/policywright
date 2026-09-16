@@ -698,6 +698,26 @@ evidence trail cites the fully-verified `CDSVPSTS…` instance.
 fetch --id CDSVPSTS… --network testnet` + `shasum -a 256` again produced
 `42227f2b6150c95a7084bb7c5ff2e7a40793eae39bf0c5dc95bd752d18ee6eed`.
 
+### D2.5 deployments (2026-09-16, source: this agent run / `npm run cli`)
+
+| Artifact | ID / hash | Notes |
+| -------- | --------- | ----- |
+| Spending-limit policy wrapper | `CC4KFQ7SIFVW45FDZ6NSKB4NETCE25CDLXIWK2GTQRT52KZUQESVTFTM` | wasm `a26a885dff54ca5331a516fbb0ee051acfac56ecd7a6f7b014d473a2303265f8`; deploy tx `b1770755c136c504c536d8d129c8504aec3c9ec03a29275d0341d0f488d5c872` |
+| OZ smart account (Delegated G) | `CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT` | wasm `413b22531042f9b2588c5cb211c1df2845615fc42a2bcee61190392318b7c578`; deploy tx `8beb1d4cb94b40a318326c0b056509177ff7c4de33caf7ac28c2ed01c652ac32`; signer `GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY` |
+| Install `pw:swap` (+ FrequencyLimitPolicy `CDSVPSTS…`) | tx `5907ecbf76be7738fc1468dbfb4023a4833fe63a011dbe73b85268ce9b6fe8da` | local-signer OZ AuthPayload path |
+| Install `pw:harvest` (+ FrequencyLimitPolicy) | tx `589faaad0a4ff19fed88b5fe9714f21d930b4b541b9b24469d34868bb54b30aa` | |
+| Install `pw:xfer:native` (+ spending-limit wrapper) | tx `36791fe400463f32654ed8b003c7d7c776e5fe9775bc3631ff835e1a41a44654` | |
+| Live verify | green — 3 CallContract rules match | `npm run cli -- verify --smart-account CAXBVHXP… --context-rule examples/live/context-rule.json` |
+
+Demo OZ account still live for read probes: `CALCGK5RRRVOV5XUGRUPX3NT5XZF3XUDL3SHM7ZXZEPNFMLFGJNCTV5W`.
+
+**Install auth note (2026-09-16):** `stellar contract invoke --send=yes` alone
+fails with `Missing signing key for account C…` because OZ Delegated signers
+need an `AuthPayload` + nested G `__check_auth(auth_digest)` entry. The CLI
+`install` path builds that payload locally (FACTS §5.3 local-signer fallback)
+after `--send=no` simulation. Preferred Freighter `signAuthEntry` remains the
+interactive path when a browser wallet is available.
+
 ---
 
 ## 6. The funded SCF submission — public facts
@@ -826,6 +846,7 @@ drop-in.
 
 | Date       | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-16 | D2.5: oz-smart-account + spending-limit-policy crates; CLI `account:create` / `install` / live `verify --smart-account`; testnet smart account `CAXBVHXP…` with three installed generated rules (FrequencyLimitPolicy ×2 + spending_limit wrapper); Delegated AuthPayload local-signer path documented. |
 | 2026-09-16 | Gate 5 added (MCP SDK 1.30.0 + Claude Desktop/Code stdio registration; Agent Skills format moved to platform.claude.com/agentskills.io; stellar-wallets-kit 2.6.0 Freighter `signAuthEntry` supported; OZ v0.7.2 create/add_context_rule/add_policy re-check; RPC retention expiry for T1 tx hashes; policy contract still live; stellar-cli latest is v28.0.0 while repo pin stays 27.1.0). Phase 0 audit: [t2-state-audit.md](t2-state-audit.md), [RECONCILIATION-T2.md](RECONCILIATION-T2.md). |
 | 2026-08-03 | File created (toolchain, OZ trait/ContextRule/limits/stock policies, fixture audit). Restructured same day around the four pre-flight gates; added stellar-cli 26.0.0→27.1.0 upgrade, `--verifiable` finding, `wasm32v1-none`, live-chain captures (protocol 27 event shapes, fee-bump, Blend claim, Soroswap swap), swap-venue verification (Comet + Soroswap with on-chain liquidity), and version pins.                                                                                                                                                                                                                                                                                                           |
 | 2026-08-03 | D1.2 session: added §2.5 — `add_context_rule` install surface, one-`Context`-per-`require_auth` at `__check_auth` (nested transfers need their own rule; that is where `spending_limit` composes), no rule auto-discovery, ≥1 signer-or-policy per rule, `spending_limit` install guards (`OnlyCallContractAllowed`/`InvalidLimitOrPeriod`/`AlreadyInstalled`) and the non-empty-signers requirement in `enforce`. Verified against a fresh v0.7.2 clone (same commit `a9c4216…`).                                                                                                                                                                                                                                   |

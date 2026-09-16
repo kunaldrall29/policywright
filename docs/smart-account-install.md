@@ -80,11 +80,15 @@ Behavior:
 
 - Recomputes `validUntilLedger` from the **live** ledger head (recording-era
   values are past — FACTS.md §2.2).
-- Always simulates each rule before submit.
+- Always simulates each rule before submit (`--send=no`).
+- Submit uses the **OZ Delegated AuthPayload path** (local-signer): stellar-cli
+  alone cannot sign `add_context_rule` on a C-account (`Missing signing key for
+  account C…`). The CLI builds `AuthPayload` + nested G `__check_auth(auth_digest)`
+  and submits via RPC — still labeled local-signer fallback, never as Freighter.
 - If spending-limit address is missing, installs the **frequency** subset and
   writes `out/installed-context-rule.json` for verify.
 - Auth: `add_context_rule` requires the smart account's auth; with
-  `Delegated(G)`, stellar-cli fills the auth entry and the G key signs.
+  `Delegated(G)`, the G key authorizes via nested `require_auth_for_args`.
 
 ### 4. Live verify
 

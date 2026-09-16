@@ -507,3 +507,35 @@ every row is re-checkable against the testnet explorer links.
 | Upload tx                                     | (wasm already on-chain; no upload tx)                                                                                                                                             |
 | Deploy tx                                     | [`35ddaeaa935af7233dbee577942edfcea2abda1ab12c1cd37d51b4c432236af0`](https://stellar.expert/explorer/testnet/tx/35ddaeaa935af7233dbee577942edfcea2abda1ab12c1cd37d51b4c432236af0) |
 | Deployer                                      | `GATUKCIMLZTQHNW3IFRNJWJZ5YDT5S2VFSTYMW3EXCKNPYVAYQCKKS3W`                                                                                                                        |
+
+### D2.5 account:create (2026-09-16)
+
+| Field | Value |
+| ----- | ----- |
+| Smart account (C…) | `CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT` |
+| Delegated signer (G…) | `GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY` |
+| Network | testnet |
+| Deploy tx | `8beb1d4cb94b40a318326c0b056509177ff7c4de33caf7ac28c2ed01c652ac32` |
+| Explorer (contract) | https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT |
+| Explorer (deploy tx) | https://stellar.expert/explorer/testnet/tx/8beb1d4cb94b40a318326c0b056509177ff7c4de33caf7ac28c2ed01c652ac32 |
+| Wasm | `/workspace/contracts/target/wasm32v1-none/release/oz_smart_account.wasm` |
+| Wasm hash | `413b22531042f9b2588c5cb211c1df2845615fc42a2bcee61190392318b7c578` |
+| Source | `npm run cli -- account:create` (local-signer / stellar-cli) |
+
+
+Also see [demo-addresses.md](./demo-addresses.md) for the live C-address list.
+
+### D2.5 install + live verify (2026-09-16)
+
+| Field | Value |
+| ----- | ----- |
+| Smart account | `CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT` |
+| Spending-limit wrapper | `CC4KFQ7SIFVW45FDZ6NSKB4NETCE25CDLXIWK2GTQRT52KZUQESVTFTM` (deploy tx `b1770755c136c504c536d8d129c8504aec3c9ec03a29275d0341d0f488d5c872`) |
+| FrequencyLimitPolicy | `CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP` (pre-existing) |
+| Install `pw:swap` | [`5907ecbf…e8da`](https://stellar.expert/explorer/testnet/tx/5907ecbf76be7738fc1468dbfb4023a4833fe63a011dbe73b85268ce9b6fe8da) |
+| Install `pw:harvest` | [`589faaad…30aa`](https://stellar.expert/explorer/testnet/tx/589faaad0a4ff19fed88b5fe9714f21d930b4b541b9b24469d34868bb54b30aa) |
+| Install `pw:xfer:native` | [`36791fe4…4654`](https://stellar.expert/explorer/testnet/tx/36791fe400463f32654ed8b003c7d7c776e5fe9775bc3631ff835e1a41a44654) |
+| Live verify | green — 3 CallContract rules |
+| Signing | local-signer fallback (OZ Delegated AuthPayload); Freighter preferred when available |
+| Source | `examples/live/context-rule.json` emitter output unmodified (ScVal wire encoding only) |
+
