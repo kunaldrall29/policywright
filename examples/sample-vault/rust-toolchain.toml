@@ -1,0 +1,7 @@
+# soroban-sdk 26.1.0 declares rust-version 1.91.0, and stellar-cli v27.1.0
+# rejects rustc 1.91.0 exactly (docs/FACTS.md §1.3), so any stable >= 1.92
+# works; pinned to a concrete release for reproducibility.
+[toolchain]
+channel = "1.97.1"
+targets = ["wasm32v1-none"]
+components = ["rustfmt", "clippy"]
