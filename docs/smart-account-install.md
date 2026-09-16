@@ -69,12 +69,12 @@ npm run cli -- install \
 
 Flags:
 
-| Flag | Meaning |
-| ---- | ------- |
-| `--dry-run` | Simulate only (`--send=no`); never submit |
-| `--only pw:swap,pw:harvest` | Install a subset of rules |
-| `--frequency-policy` | Default `CDSVPSTS…` |
-| `--spending-limit-policy` | Required for `stock:spending_limit` rules |
+| Flag                        | Meaning                                   |
+| --------------------------- | ----------------------------------------- |
+| `--dry-run`                 | Simulate only (`--send=no`); never submit |
+| `--only pw:swap,pw:harvest` | Install a subset of rules                 |
+| `--frequency-policy`        | Default `CDSVPSTS…`                       |
+| `--spending-limit-policy`   | Required for `stock:spending_limit` rules |
 
 Behavior:
 
@@ -83,7 +83,7 @@ Behavior:
 - Always simulates each rule before submit (`--send=no`).
 - Submit uses the **OZ Delegated AuthPayload path** (local-signer): stellar-cli
   alone cannot sign `add_context_rule` on a C-account (`Missing signing key for
-  account C…`). The CLI builds `AuthPayload` + nested G `__check_auth(auth_digest)`
+account C…`). The CLI builds `AuthPayload` + nested G `__check_auth(auth_digest)`
   and submits via RPC — still labeled local-signer fallback, never as Freighter.
 - If spending-limit address is missing, installs the **frequency** subset and
   writes `out/installed-context-rule.json` for verify.
@@ -121,8 +121,8 @@ library used by the CLI.
 
 ## Contracts
 
-| Crate | Role |
-| ----- | ---- |
-| `contracts/oz-smart-account` | Deployable OZ SmartAccount (no Upgradeable) |
-| `contracts/spending-limit-policy` | Thin wrapper over stock `spending_limit` |
+| Crate                              | Role                                                               |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| `contracts/oz-smart-account`       | Deployable OZ SmartAccount (no Upgradeable)                        |
+| `contracts/spending-limit-policy`  | Thin wrapper over stock `spending_limit`                           |
 | `contracts/frequency-limit-policy` | Generated FrequencyLimitPolicy (already on testnet as `CDSVPSTS…`) |

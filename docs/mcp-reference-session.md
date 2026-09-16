@@ -1,7 +1,7 @@
 # MCP reference session
 
-Criterion (D2.1): *The server runs locally and an agent calls each tool end to
-end; a reference session is recorded.*
+Criterion (D2.1): _The server runs locally and an agent calls each tool end to
+end; a reference session is recorded._
 
 ## Agent registration
 

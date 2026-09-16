@@ -14,12 +14,12 @@ CallContract rules).
 
 **Intended checks:**
 
-| Case | Intent |
-| ---- | ------ |
-| (a) | In-scope action permitted through the account |
-| (b) | Over spend-cap rejected |
-| (c) | Out-of-scope call rejected |
-| (d) | Frequency window enforced (if feasible) |
+| Case | Intent                                        |
+| ---- | --------------------------------------------- |
+| (a)  | In-scope action permitted through the account |
+| (b)  | Over spend-cap rejected                       |
+| (c)  | Out-of-scope call rejected                    |
+| (d)  | Frequency window enforced (if feasible)       |
 
 ### BLOCKED-honest (Phase 4)
 

@@ -216,7 +216,11 @@ describe('buildScenarios — BLND→XLM criterion', () => {
 
   it('includes a labeled BLND→XLM scenario with real FACTS contract IDs', () => {
     for (const enforce of [false, true]) {
-      const spec = synthesize(swapTx, { ...DEFAULT_SYNTH_CONFIG, constrainArguments: enforce }, NOW);
+      const spec = synthesize(
+        swapTx,
+        { ...DEFAULT_SYNTH_CONFIG, constrainArguments: enforce },
+        NOW,
+      );
       const scenarios = buildScenarios(spec, swapTx);
       const criterion = scenarios.find((s) => s.candidate.label === 'BLND→XLM (unobserved route)');
       expect(criterion).toBeDefined();

@@ -60,9 +60,7 @@ function randomNonce(): xdr.Int64 {
 }
 
 function buildAuthDigest(signaturePayload: Buffer, contextRuleIds: readonly number[]): Buffer {
-  const ruleIdsXdr = xdr.ScVal.scvVec(
-    contextRuleIds.map((id) => xdr.ScVal.scvU32(id)),
-  ).toXDR();
+  const ruleIdsXdr = xdr.ScVal.scvVec(contextRuleIds.map((id) => xdr.ScVal.scvU32(id))).toXDR();
   return hash(Buffer.concat([signaturePayload, ruleIdsXdr]));
 }
 
@@ -284,18 +282,14 @@ export async function submitAddContextRuleDelegated(
   // Rebuild invoke with both auth entries; fetch account sequence for fee payer.
   let sequence: string;
   try {
-    const hz = await fetch(
-      `https://horizon-testnet.stellar.org/accounts/${keypair.publicKey()}`,
-    );
+    const hz = await fetch(`https://horizon-testnet.stellar.org/accounts/${keypair.publicKey()}`);
     if (!hz.ok) {
       throw new Error(`horizon ${hz.status}`);
     }
     const hzBody = (await hz.json()) as { sequence: string };
     sequence = hzBody.sequence;
   } catch (cause) {
-    throw networkError(
-      `could not load fee-payer sequence: ${(cause as Error).message}`,
-    );
+    throw networkError(`could not load fee-payer sequence: ${(cause as Error).message}`);
   }
 
   // Extract host function from the unsigned tx.

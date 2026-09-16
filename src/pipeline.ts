@@ -144,9 +144,7 @@ export interface VerifyScenariosResult extends SimulatePipelineResult {
  * Offline dry-run suite assertion (same contract as `npm run demo`).
  * NOT the MCP/CLI `verify` tool — that diffs on-chain rules vs emitted spec.
  */
-export function pipelineVerifyScenarios(
-  input: SimulatePipelineInput = {},
-): VerifyScenariosResult {
+export function pipelineVerifyScenarios(input: SimulatePipelineInput = {}): VerifyScenariosResult {
   const simulated = pipelineSimulate(input);
   const failures: string[] = [];
   simulated.scenarios.forEach((scenario, i) => {

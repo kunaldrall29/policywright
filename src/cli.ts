@@ -250,9 +250,7 @@ async function cmdVerify(rest: readonly string[]): Promise<void> {
     throw badInput('verify requires --context-rule <file>');
   }
   if (snapshotPath === undefined && smartAccount === undefined) {
-    throw badInput(
-      'verify requires --on-chain-snapshot <file> or --smart-account <C…>',
-    );
+    throw badInput('verify requires --on-chain-snapshot <file> or --smart-account <C…>');
   }
 
   let emitted: unknown;
@@ -272,15 +270,10 @@ async function cmdVerify(rest: readonly string[]): Promise<void> {
       smartAccount,
       network,
       frequencyPolicyAddress: flags.get('frequency-policy') ?? DEFAULT_FREQUENCY_POLICY,
-      ...(spendingLimitPolicyAddress !== undefined
-        ? { spendingLimitPolicyAddress }
-        : {}),
+      ...(spendingLimitPolicyAddress !== undefined ? { spendingLimitPolicyAddress } : {}),
     });
     mkdirSync('out', { recursive: true });
-    writeFileSync(
-      resolve('out/on-chain-snapshot.json'),
-      `${JSON.stringify(snapshot, null, 2)}\n`,
-    );
+    writeFileSync(resolve('out/on-chain-snapshot.json'), `${JSON.stringify(snapshot, null, 2)}\n`);
   } else {
     try {
       snapshot = JSON.parse(readFileSync(snapshotPath!, 'utf8'));
@@ -312,9 +305,7 @@ function cmdAccountCreate(rest: readonly string[]): void {
   const flags = parseFlags(rest);
   const networkFlag = flags.get('network');
   const result =
-    networkFlag !== undefined
-      ? createSmartAccount({ network: networkFlag })
-      : createSmartAccount();
+    networkFlag !== undefined ? createSmartAccount({ network: networkFlag }) : createSmartAccount();
   process.stdout.write(
     [
       `smartAccount: ${result.smartAccount}`,
@@ -379,9 +370,7 @@ async function cmdInstall(rest: readonly string[]): Promise<void> {
 
   for (const rule of plan.rules) {
     if (rule.blockers.length > 0) {
-      process.stderr.write(
-        `note: rule "${rule.name}" blockers: ${rule.blockers.join('; ')}\n`,
-      );
+      process.stderr.write(`note: rule "${rule.name}" blockers: ${rule.blockers.join('; ')}\n`);
     }
   }
 
@@ -397,9 +386,7 @@ async function cmdInstall(rest: readonly string[]): Promise<void> {
   if (onlyNames === undefined && installable.length < plan.rules.length) {
     // Prefer frequency-policy rules so the D2.5 criterion is met even when the
     // spending-limit wrapper address was not passed.
-    const freq = installable.filter((r) =>
-      r.policies.some((p) => /frequency/i.test(p.policy)),
-    );
+    const freq = installable.filter((r) => r.policies.some((p) => /frequency/i.test(p.policy)));
     onlyNames = (freq.length > 0 ? freq : installable).map((r) => r.name);
     process.stdout.write(
       `note: installing subset [${onlyNames.join(', ')}] ` +
@@ -449,16 +436,11 @@ async function cmdInstall(rest: readonly string[]): Promise<void> {
             ? `subset install: ${result.installedNames.join(', ')}`
             : 'full install',
       };
-      writeFileSync(
-        'out/installed-context-rule.json',
-        `${JSON.stringify(subset, null, 2)}\n`,
-      );
+      writeFileSync('out/installed-context-rule.json', `${JSON.stringify(subset, null, 2)}\n`);
     } catch {
       // non-fatal
     }
-    process.stdout.write(
-      `explorer.account: ${TESTNET_EXPLORER_CONTRACT}${smartAccount}\n`,
-    );
+    process.stdout.write(`explorer.account: ${TESTNET_EXPLORER_CONTRACT}${smartAccount}\n`);
   }
 }
 

@@ -10,10 +10,10 @@ reproduce the committed dual reports against the real claim→swap sequence.
 ([`DEFAULT_SYNTH_CONFIG`](../src/types.ts)). Passing `--constrain-arguments` on
 `synth` or `simulate` turns enforcement on.
 
-| Mode | Flag | Unobserved swap route | Observed route |
-| ---- | ---- | --------------------- | -------------- |
-| Default | omit / off | **flag** (advisory) | **permit** |
-| Tightened | `--constrain-arguments` | **deny** | **permit** |
+| Mode      | Flag                    | Unobserved swap route | Observed route |
+| --------- | ----------------------- | --------------------- | -------------- |
+| Default   | omit / off              | **flag** (advisory)   | **permit**     |
+| Tightened | `--constrain-arguments` | **deny**              | **permit**     |
 
 The synthesizer **always** records observations as `spec.argumentScopes`. Only
 when the flag is on are those observations copied into `spec.policies` as
@@ -40,10 +40,10 @@ On the committed live sequence
 [`examples/live/recorded-claim-swap.json`](../examples/live/recorded-claim-swap.json)
 the observed path is **XLM(native) → USDC**:
 
-| Symbol | Contract ID |
-| ------ | ----------- |
+| Symbol       | Contract ID                                                |
+| ------------ | ---------------------------------------------------------- |
 | XLM / native | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
-| USDC | `CB3TLW74NBIOT3BUWOZ3TUM6RFDF6A4GVIRUQRQZABG5KPOUL4JJOV2F` |
+| USDC         | `CB3TLW74NBIOT3BUWOZ3TUM6RFDF6A4GVIRUQRQZABG5KPOUL4JJOV2F` |
 
 ## Honest limits
 

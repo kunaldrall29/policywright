@@ -13,11 +13,7 @@
 import { writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import {
-  runStellarCli,
-  TESTNET_EXPLORER_TX,
-  type TestnetIdentity,
-} from '../cli-env.js';
+import { runStellarCli, TESTNET_EXPLORER_TX, type TestnetIdentity } from '../cli-env.js';
 import { badInput } from '../sources/errors.js';
 import type { InstallPlan, InstallRuleInvocation } from './prepare.js';
 import { submitAddContextRuleDelegated } from './sign-delegated.js';

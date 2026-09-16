@@ -22,12 +22,12 @@ RPC endpoint and network come from tool args or env (`STELLAR_RPC_URL`,
 
 ## Tools
 
-| Tool | Role | Determinism |
-| ---- | ---- | ----------- |
-| `record` | Hashes / simulation / inline RecordedTx → merged recording | Deterministic per (input, chain state) |
-| `synthesize` | Recording → context rules + policies + generated Rust | **Pure** given recording + SynthConfig |
-| `simulate` | Dry-run permit/deny/flag scenarios | **Pure** given recording + SynthConfig |
-| `verify` | Diff emitted `context-rule.json` vs on-chain (or fixture) snapshot | Deterministic per (emitted spec, chain state / snapshot) |
+| Tool         | Role                                                               | Determinism                                              |
+| ------------ | ------------------------------------------------------------------ | -------------------------------------------------------- |
+| `record`     | Hashes / simulation / inline RecordedTx → merged recording         | Deterministic per (input, chain state)                   |
+| `synthesize` | Recording → context rules + policies + generated Rust              | **Pure** given recording + SynthConfig                   |
+| `simulate`   | Dry-run permit/deny/flag scenarios                                 | **Pure** given recording + SynthConfig                   |
+| `verify`     | Diff emitted `context-rule.json` vs on-chain (or fixture) snapshot | Deterministic per (emitted spec, chain state / snapshot) |
 
 `verify` is **on-chain / spec reconciliation**, not the offline dry-run
 self-check (`npm run demo` / `pipelineVerifyScenarios`). See

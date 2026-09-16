@@ -30,12 +30,12 @@ anyone signs.
 
 ## MCP tools (exactly four — call in this order for the happy path)
 
-| Tool | When |
-| ---- | ---- |
-| `record` | User pastes tx hashes, a saved simulateTransaction exchange, or a RecordedTx path |
-| `synthesize` | Build context rules + policies; **surface `notes` and `warnings`** |
-| `simulate` | Show permit / deny / flag; flip `constrainArguments` for before/after |
-| `verify` | Diff emitted context-rule vs on-chain snapshot (or `fixtures/verify/*`) |
+| Tool         | When                                                                              |
+| ------------ | --------------------------------------------------------------------------------- |
+| `record`     | User pastes tx hashes, a saved simulateTransaction exchange, or a RecordedTx path |
+| `synthesize` | Build context rules + policies; **surface `notes` and `warnings`**                |
+| `simulate`   | Show permit / deny / flag; flip `constrainArguments` for before/after             |
+| `verify`     | Diff emitted context-rule vs on-chain snapshot (or `fixtures/verify/*`)           |
 
 Installation is **CLI-only** (human signs). Say so explicitly when the user is
 ready to install — do not invent an MCP `prepare_install` / `install` call.

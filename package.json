@@ -40,8 +40,7 @@
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "@stellar/stellar-sdk": "15.1.0",
-    "zod": "^4.6.5"
+    "@stellar/stellar-sdk": "15.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

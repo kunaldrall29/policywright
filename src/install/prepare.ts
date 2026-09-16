@@ -158,9 +158,7 @@ async function resolveLatestLedger(input: PrepareInstallInput, network: Network)
       }),
     });
   } catch (cause) {
-    throw networkError(
-      `getLatestLedger fetch failed: ${(cause as Error).message}`,
-    );
+    throw networkError(`getLatestLedger fetch failed: ${(cause as Error).message}`);
   }
   if (!response.ok) {
     throw networkError(`getLatestLedger HTTP ${response.status}`);
@@ -215,9 +213,7 @@ export async function prepareInstall(input: PrepareInstallInput): Promise<Instal
       }
     }
     if (signers.length === 0) {
-      blockers.push(
-        'signers array is empty — pass --signer <G…> (Delegated smart-account signer)',
-      );
+      blockers.push('signers array is empty — pass --signer <G…> (Delegated smart-account signer)');
     }
     if (signers.length === 0 && policies.every((p) => p.address === null)) {
       blockers.push('add_context_rule requires at least one signer or one policy address');
@@ -293,8 +289,7 @@ export async function prepareInstall(input: PrepareInstallInput): Promise<Instal
     notes,
     signingHierarchy: {
       preferred: 'stellar-wallets-kit + Freighter signAuthEntry (browser)',
-      fallback:
-        'local-signer from .env STELLAR_SECRET_KEY (headless / CI) — label output honestly',
+      fallback: 'local-signer from .env STELLAR_SECRET_KEY (headless / CI) — label output honestly',
     },
   };
 }
