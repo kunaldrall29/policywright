@@ -71,6 +71,27 @@ describe('verify/diff (on-chain vs emitted)', () => {
     ).toThrow(RecorderError);
   });
 
+  it('ignores on-chain Default rules from OZ constructor', () => {
+    const emitted = parseEmittedContextRule(loadJson(FIXTURE_CONTEXT_RULE));
+    const base = parseOnChainSnapshot(loadJson(FIXTURE_MATCH));
+    const withDefault = parseOnChainSnapshot({
+      ...base,
+      contextRules: [
+        {
+          id: 0,
+          name: 'default',
+          contextType: { type: 'Default' },
+          validUntilLedger: null,
+          policies: [],
+        },
+        ...base.contextRules,
+      ],
+    });
+    const result = diffEmittedVsOnChain(emitted, withDefault);
+    expect(result.ok).toBe(true);
+    expect(result.actualRuleCount).toBe(base.contextRules.length + 1);
+  });
+
   it('reports a missing on-chain rule when a contract is absent', () => {
     const emitted = parseEmittedContextRule(loadJson(FIXTURE_CONTEXT_RULE));
     const snapshot = parseOnChainSnapshot({

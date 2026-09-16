@@ -395,27 +395,34 @@ function diffPolicies(
   }
 }
 
+export interface VerifyDiffOptions {
+  /**
+   * When true, skip validUntilLedger comparison. Live installs recompute
+   * validUntil from the ledger head (FACTS.md §2.2); recording-era values in
+   * emitted JSON will not match.
+   */
+  readonly ignoreValidUntil?: boolean;
+}
+
 /**
  * Diff emitted context rules + attached policies against an on-chain snapshot.
  * Pass when every emitted CallContract rule is present on-chain with matching
  * policy kinds / install params (and addresses when the emitted doc filled them).
+ *
+ * On-chain Default rules (OZ constructor) are ignored for matching.
  */
 export function diffEmittedVsOnChain(
   emitted: EmittedContextRuleDoc,
   snapshot: OnChainSnapshot,
+  options: VerifyDiffOptions = {},
 ): VerifyDiffResult {
   const diffs: DiffEntry[] = [];
   const remaining = new Map<string, OnChainContextRule>();
   for (const rule of snapshot.contextRules) {
     const key = contractKey(rule);
     if (key === null) {
-      pushDiff(
-        diffs,
-        `onChain.contextRules[${rule.name}]`,
-        'CallContract',
-        'Default',
-        `on-chain Default rule "${rule.name}" has no emitted counterpart (policywright never emits Default)`,
-      );
+      // OZ `__constructor` always installs a Default rule; policywright never
+      // emits Default. Ignore it for matching (still counted in actualRuleCount).
       continue;
     }
     remaining.set(key, rule);
@@ -442,7 +449,7 @@ export function diffEmittedVsOnChain(
     if (act.name !== exp.name) {
       pushDiff(diffs, `${base}.name`, exp.name, act.name, `context-rule name mismatch`);
     }
-    if (act.validUntilLedger !== exp.validUntilLedger) {
+    if (!options.ignoreValidUntil && act.validUntilLedger !== exp.validUntilLedger) {
       pushDiff(
         diffs,
         `${base}.validUntilLedger`,
@@ -476,11 +483,14 @@ export function diffEmittedVsOnChain(
 export interface VerifyAgainstSnapshotInput {
   readonly emitted: unknown;
   readonly snapshot: unknown;
+  readonly ignoreValidUntil?: boolean;
 }
 
 /** Parse both sides and diff. Shared entry point for CLI + MCP. */
 export function verifyAgainstSnapshot(input: VerifyAgainstSnapshotInput): VerifyDiffResult {
   const emitted = parseEmittedContextRule(input.emitted);
   const snapshot = parseOnChainSnapshot(input.snapshot);
-  return diffEmittedVsOnChain(emitted, snapshot);
+  return diffEmittedVsOnChain(emitted, snapshot, {
+    ignoreValidUntil: input.ignoreValidUntil === true || snapshot.source === 'rpc',
+  });
 }
