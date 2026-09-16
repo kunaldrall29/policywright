@@ -92,7 +92,9 @@ CAP-67/SEP-41 token events into one merged `RecordedTx`, resolving each token's 
 decimals from its SAC metadata (with an explicit `resolved: false` fallback when that is
 not possible). `--account <G…|C…>` names the subject whose authorizations are scoped;
 `--from-simulation <file>` ingests a saved `simulateTransaction` exchange instead.
-Not-found, failed, wrong-network, and decode failures return clear, actionable errors.
+Not-found, failed, and decode failures return clear, actionable typed errors.
+A hash that exists only on another network surfaces as `TX_NOT_FOUND` with an
+explicit “check the hash is on the right network” hint (not a separate code).
 
 ## Configuration
 
