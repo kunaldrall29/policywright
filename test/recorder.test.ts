@@ -430,18 +430,20 @@ describe('error taxonomy', () => {
   it('BAD_INPUT: explicit --account with zero involvement in the sequence', async () => {
     const decoded = decodeTx(decodedTxInputFromCapture(loadCapture(SWAP_HASH)));
     const unrelated = 'GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY';
-    await expect(
-      assembleRecording([decoded], {
+    try {
+      await assembleRecording([decoded], {
         network: 'testnet',
         source: 'rpc',
         subject: unrelated,
         resolveToken: stubResolver,
-      }),
-    ).rejects.toMatchObject({
-      name: 'RecorderError',
-      code: 'BAD_INPUT',
-      message: expect.stringMatching(/no involvement/),
-    });
+      });
+      expect.unreachable();
+    } catch (error) {
+      const err = error as RecorderError;
+      expect(err.name).toBe('RecorderError');
+      expect(err.code).toBe('BAD_INPUT');
+      expect(err.message).toMatch(/no involvement/);
+    }
   });
 
   it('BAD_INPUT: capture with a non-SUCCESS status', () => {

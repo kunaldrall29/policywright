@@ -37,14 +37,14 @@ lines.push(
 
 lines.push('## zero involvement');
 const SWAP = '2dcff6618ff12fb629700cab627b3870afa3f0dd000becf88b2eb7826d0b2c1b';
-const doc = JSON.parse(readFileSync(`examples/live/${SWAP}.json`, 'utf8'));
+const doc = JSON.parse(readFileSync(`examples/live/${SWAP}.json`, 'utf8')) as unknown;
 const decoded = decodeTx(decodedTxInputFromCapture(doc));
 try {
   await assembleRecording([decoded], {
     network: 'testnet',
     source: 'rpc',
     subject: 'GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY',
-    resolveToken: async (id) => fallbackToken(id),
+    resolveToken: (id) => Promise.resolve(fallbackToken(id)),
   });
   lines.push('UNEXPECTED SUCCESS');
 } catch (e) {
