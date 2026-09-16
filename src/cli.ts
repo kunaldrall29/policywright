@@ -49,9 +49,10 @@ A multi-step flow (e.g. Blend claim then Soroswap swap) is several hashes —
 Soroban allows one InvokeHostFunction per transaction. Passing every hash
 merges them into ONE RecordedTx ordered by ledger close time.
 
-Synthesis flags (defaults in parentheses):
-  --input <recorded.json>    synthesize from a saved record output instead of
-                             the baked-in fixture (e.g. examples/live/recorded-claim-swap.json)
+Synthesis flags (defaults in parentheses; also apply to simulate):
+  --input <recorded.json>    synthesize/simulate from a saved record output
+                             instead of the baked-in fixture (e.g.
+                             examples/live/recorded-claim-swap.json)
   --lifetime <secs>          context-rule lifetime (${D.lifetimeSecs})
   --spend-window <secs>      spend-cap rolling window (${D.spendWindowSecs})
   --cap-multiplier <number>  cap = observed gross out * this (${D.capMultiplier})
@@ -165,11 +166,16 @@ function cmdSynth(config: SynthConfig, inputPath: string | undefined): void {
   process.stdout.write(`${artifacts.contextRuleJson}\n`);
 }
 
-function cmdSimulate(config: SynthConfig): void {
-  const tx = loadFixture();
+function cmdSimulate(config: SynthConfig, inputPath: string | undefined): void {
+  const tx = inputPath === undefined ? loadFixture() : loadRecordedTx(inputPath);
   const spec = synthesize(tx, config, tx.timestamp ?? 0);
   const results = buildScenarios(spec, tx).map((s) => simulateCall(spec, s.candidate));
-  process.stdout.write(`${renderReport(results)}\n`);
+  process.stdout.write(
+    `${renderReport(results, {
+      ...(inputPath === undefined ? {} : { source: inputPath }),
+      constrainArguments: config.constrainArguments,
+    })}\n`,
+  );
 }
 
 /** Positional (non-flag) arguments, skipping each flag's value token. */
@@ -246,9 +252,11 @@ async function main(): Promise<void> {
       cmdSynth(parseSynthConfig(flags), flags.get('input'));
       return;
     }
-    case 'simulate':
-      cmdSimulate(parseSynthConfig(parseFlags(rest)));
+    case 'simulate': {
+      const flags = parseFlags(rest);
+      cmdSimulate(parseSynthConfig(flags), flags.get('input'));
       return;
+    }
     case 'record':
       await cmdRecord(rest);
       return;

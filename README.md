@@ -111,7 +111,9 @@ as `argumentScopes` in the spec). What that observation does depends on the flag
 **Limits.** This constrains the _set of tokens the path may touch_, not the ordering,
 intermediate-hop count, or amounts. A multi-hop route through only-observed tokens is
 allowed; amount bounds are the spending-limit policy's job. It currently covers the swap
-`path` argument only.
+`path` argument only. Full derivation rules, limits, and commands to reproduce the
+committed dual reports on the live claim→swap sequence are in
+[docs/argument-scope.md](docs/argument-scope.md).
 
 ## The generated Rust policy is illustrative
 

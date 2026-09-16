@@ -32,5 +32,18 @@ They reflect the default synthesis config (`constrainArguments` off), so the
 unobserved-route scenario is **flagged** rather than denied. Running
 `npm run cli -- simulate --constrain-arguments` enforces it as a denial instead.
 
+Dual dry-run reports for the **real** claim→swap recording (D2.3 argument-scope
+evidence — see [docs/argument-scope.md](../docs/argument-scope.md)):
+
+| File | Mode |
+| --- | --- |
+| `live/simulation-report-args-off.md` | default off — BLND→XLM **flag** |
+| `live/simulation-report-args-on.md` | `--constrain-arguments` — BLND→XLM **deny** |
+
+```bash
+npm run cli -- simulate --input examples/live/recorded-claim-swap.json
+npm run cli -- simulate --input examples/live/recorded-claim-swap.json --constrain-arguments
+```
+
 These are generated artefacts and are intentionally excluded from Prettier so
 they match the tool's raw output verbatim.
