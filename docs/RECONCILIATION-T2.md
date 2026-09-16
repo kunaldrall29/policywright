@@ -1,0 +1,20 @@
+# RECONCILIATION — Tranche 2
+
+Assumption vs reality for Tranche 2 work. Ground truth lives in
+[FACTS.md](FACTS.md). T1 rows remain in [RECONCILIATION.md](RECONCILIATION.md).
+Compiled 2026-09-16 from the Phase 0 audit ([t2-state-audit.md](t2-state-audit.md)).
+
+| # | Assumption | Actual | Impact | Source |
+| - | ---------- | ------ | ------ | ------ |
+| T2-1 | MCP server may expose an install/prepare tool for agent convenience | ✗ Permanent product rule: tools are exactly `record` / `synthesize` / `simulate` / `verify`. Installation is a separate human-signed CLI step. The remote T2 branch's `prepare_install` MCP tool is non-compliant. | MCP surface must drop install; CLI keeps `prepare-install` / `install`. | Award plan; FACTS Gate 5 |
+| T2-2 | MCP `verify` = offline demo self-check | ✗ Criterion + Phase 1: `verify` reads on-chain context rules + attached policies and diffs against the emitted spec. Offline scenario assertion stays as `pipelineVerify` / `npm run demo`, not the MCP tool. | Rewrite verify as shared library; MCP wraps it. | Phase 1 D2.1/D2.5 |
+| T2-3 | Anthropic skill docs live at docs.anthropic.com | ✗ Docs moved to platform.claude.com / agentskills.io (2026-09-16). Frontmatter still `name` + `description`. | Skill packaging follows the refreshed FACTS Gate 5 format. | FACTS Gate 5.2 |
+| T2-4 | stellar-wallets-kit cannot sign Soroban auth entries | ✗ Kit 2.6.0 Freighter module implements `signAuthEntry` via `@stellar/freighter-api`. | Signing hierarchy: wallets-kit + Freighter client-side first; local-signer fallback only when kit path unavailable, labeled in output. | FACTS Gate 5.3 |
+| T2-5 | Stock `spending_limit` can meter a Soroswap router swap | ✗ Unchanged from T1 row 12: only meters `transfer` on a `CallContract(token)` rule. Compose onto token rules; generate for frequency / arg / fn constraints. | Compose-first partition stays; dual artifacts required for D2.4. | FACTS §2.4; RECONCILIATION row 12 |
+| T2-6 | Recorded claim/swap hashes remain fetchable via Soroban RPC | ✗ Aged out of retention by 2026-09-16 (`oldestLedger` ≫ tx ledgers). Horizon + explorers + committed captures remain. | Live `record` of those hashes returns `TX_NOT_FOUND`; use committed `examples/live/`. Fresh hashes needed for video. | FACTS Gate 3 retention re-check |
+| T2-7 | `--constrain-arguments` is a completed T2 deliverable as shipped in T1 | ✗/nuance: core flag+tests exist; criterion requires committed dual reports on the **real** sequence (BLND→XLM flag vs deny) and documented derivation limits. | Close the evidence gap; do not rewrite working derivation. | t2-state-audit D2.3 |
+
+## Disposition
+
+Rows T2-1, T2-2, T2-3, T2-6, T2-7 are required changes for Tranche 2
+completion. T2-4 and T2-5 are confirmatory (keep the recorded design).
