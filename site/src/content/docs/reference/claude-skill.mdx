@@ -1,0 +1,64 @@
+---
+title: Claude skill
+description: Load the policywright skill — clarification triggers and guardrails.
+---
+
+import StatusBadge from '../../../components/StatusBadge.astro';
+import UnauditedBanner from '../../../components/UnauditedBanner.astro';
+
+<StatusBadge
+  status="shipped"
+  proofHref="https://github.com/kunal-drall/policywright/blob/main/skills/policywright/SKILL.md"
+  proofLabel="SKILL.md"
+/>
+
+The packaged skill lives at
+[`skills/policywright/SKILL.md`](https://github.com/kunal-drall/policywright/blob/main/skills/policywright/SKILL.md)
+(mirrored under `.claude/skills/policywright/` for Claude Code). Frontmatter
+matches the current Agent Skills format (`name` + `description`) —
+[FACTS.md Gate 5.2](https://github.com/kunal-drall/policywright/blob/main/docs/FACTS.md).
+
+<UnauditedBanner />
+
+## Loading
+
+| Host | Path |
+| ---- | ---- |
+| Claude Code (project) | `.claude/skills/policywright/` |
+| Claude Code (personal) | `~/.claude/skills/policywright/` |
+| Repo canonical | `skills/policywright/SKILL.md` |
+
+Register the [MCP server](/reference/mcp-tools/) first so the skill can call
+tools. Demo script with expected tool calls per turn:
+[docs/skill-demo-script.md](https://github.com/kunal-drall/policywright/blob/main/docs/skill-demo-script.md).
+
+## Guardrails (non-negotiable)
+
+1. **Never install or deploy via the agent.** No MCP install tool — direct
+   humans to the [CLI / Freighter step](/guides/smart-account-install/).
+2. **Always `simulate` before concluding** a policy is safe.
+3. **Always show the UNAUDITED banner** from synthesize output / generated Rust.
+4. **Never invent** hashes, amounts, addresses, or explorer results.
+5. **Compose stock OZ** where it fits; generate only where it cannot.
+
+## Clarification triggers
+
+Stop and ask before proceeding when any of these apply:
+
+1. Ambiguous spend cap (gross outflow vs multiplier).
+2. Ambiguous lifetime.
+3. Multi-asset outflows — which caps apply.
+4. Argument constraints on/off (`constrainArguments`).
+5. Any synthesize warning that changes scope (policy-count cap, unresolved
+   metadata, subject assumption).
+
+## Happy-path tool order
+
+`record` (if needed) → `synthesize` → clarify → `simulate` (args off, then on)
+→ `verify` → **stop** and hand install to the human.
+
+## [BLOCKER] Human demo recording
+
+A human must record the skill conversation (UI + tool traces) per the demo
+script and store it under `evidence/` when closing D2.2. No session video is
+linked here.

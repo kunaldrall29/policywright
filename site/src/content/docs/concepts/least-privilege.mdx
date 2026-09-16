@@ -5,7 +5,11 @@ description: Permit exactly the observed flow and nothing else — the rules v0 
 
 import StatusBadge from '../../../components/StatusBadge.astro';
 
-<StatusBadge status="shipped" />
+<StatusBadge
+  status="shipped"
+  proofHref="https://github.com/kunal-drall/policywright/blob/main/test/simulate.test.ts"
+  proofLabel="simulate tests"
+/>
 
 Policywright's core thesis: the safest authorization is derived from a
 transaction the user has already performed. Whatever that transaction did is
@@ -58,8 +62,12 @@ anything would be installed:
 | One call over the frequency limit | ⛔ deny   |
 | Route through an unobserved token | ⚠️ flag (default) / ⛔ deny (`--constrain-arguments`) |
 
-`npm run demo` asserts all six behave as expected and exits non-zero otherwise
-([committed report](https://github.com/kunal-drall/policywright/blob/main/examples/simulation-report.md)).
+`npm run demo` asserts the fixture scenarios. Live dual-mode reports (including
+BLND→XLM flag vs deny):
+[args-off](https://github.com/kunal-drall/policywright/blob/main/examples/live/simulation-report-args-off.md)
+/
+[args-on](https://github.com/kunal-drall/policywright/blob/main/examples/live/simulation-report-args-on.md)
+— see [Dry-run & argument scope](/guides/argument-scope/).
 
 ## Honest edges
 

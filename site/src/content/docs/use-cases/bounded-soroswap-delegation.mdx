@@ -1,0 +1,29 @@
+---
+title: Bounded Soroswap delegation (concept)
+description: Swap-path argument scope shipped; full delegation walkthrough Planned.
+---
+
+import StatusBadge from '../../../components/StatusBadge.astro';
+
+<StatusBadge
+  status="in-development"
+  proofHref="https://github.com/kunal-drall/policywright/blob/main/docs/argument-scope.md"
+  proofLabel="argument-scope.md"
+/>
+
+**Capability: Shipped** — config-gated argument-level scope constrains the
+token **set** on a Soroswap `path` (flag by default; deny with
+`--constrain-arguments`). Dual live reports prove BLND→XLM flag vs deny on
+the real claim→swap sequence —
+[Dry-run & argument scope](/guides/argument-scope/).
+
+**Walkthrough: Planned (T3)** — a packaged “bounded Soroswap delegation”
+narrative beyond the existing yield-ops install is **not** claimed. See
+[Roadmap](/roadmap/) T3 Planned walkthroughs.
+
+What you can do today: synthesize from
+[`examples/live/recorded-claim-swap.json`](https://github.com/kunal-drall/policywright/blob/main/examples/live/recorded-claim-swap.json),
+dry-run both argument modes, and (testnet) install the composed + generated
+rules on
+[`CAXBVHXP…`](https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT)
+per [Agent yield operations](/use-cases/agent-yield-operations/).

@@ -1,0 +1,59 @@
+---
+title: Agent yield operations
+description: Executed testnet walkthrough — real hashes, rules, and installed smart account.
+---
+
+import StatusBadge from '../../../components/StatusBadge.astro';
+import UnauditedBanner from '../../../components/UnauditedBanner.astro';
+
+<StatusBadge
+  status="shipped-testnet"
+  proofHref="https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT"
+  proofLabel="live SA"
+/>
+
+Executed walkthrough (not a concept brief): record a real Blend harvest +
+Soroswap swap, synthesize least-privilege rules, dry-run, install on a testnet
+OZ smart account, live-verify.
+
+<UnauditedBanner />
+
+## Real inputs
+
+| Step | Artefact |
+| ---- | -------- |
+| Claim tx | [`acf256a0…`](https://stellar.expert/explorer/testnet/tx/acf256a0688e7f9c36520f4fc20cfa924d1b2e593033d85b0e443ce770b2d452) |
+| Swap tx | [`2dcff661…`](https://stellar.expert/explorer/testnet/tx/2dcff6618ff12fb629700cab627b3870afa3f0dd000becf88b2eb7826d0b2c1b) |
+| Merged recording | [`examples/live/recorded-claim-swap.json`](https://github.com/kunal-drall/policywright/blob/main/examples/live/recorded-claim-swap.json) |
+| Emitted rules | [`examples/live/context-rule.json`](https://github.com/kunal-drall/policywright/blob/main/examples/live/context-rule.json) — `pw:swap`, `pw:harvest`, `pw:xfer:native` |
+
+Observed flow (deterministic from the committed recording): Soroswap
+`swap_exact_tokens_for_tokens` + Blend `harvest`; **1 native XLM out**,
+~0.03 USDC in.
+
+## Dry-run
+
+Compose + generate harness:
+[`simulation-report-compose-and-generate.md`](https://github.com/kunal-drall/policywright/blob/main/examples/live/simulation-report-compose-and-generate.md)
+— permit original; deny over-cap (composed `spending_limit`); deny
+repeat-within-window (generated frequency). Argument scope dual reports:
+[Dry-run & argument scope](/guides/argument-scope/).
+
+## Install + verify (testnet)
+
+| Item | Value |
+| ---- | ----- |
+| Smart account | [`CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT`](https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT) |
+| Frequency policy | [`CDSVPSTS…`](https://stellar.expert/explorer/testnet/contract/CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP) |
+| Install txs | [`5907ecbf…`](https://stellar.expert/explorer/testnet/tx/5907ecbf76be7738fc1468dbfb4023a4833fe63a011dbe73b85268ce9b6fe8da) (`pw:swap`), [`589faaad…`](https://stellar.expert/explorer/testnet/tx/589faaad0a4ff19fed88b5fe9714f21d930b4b541b9b24469d34868bb54b30aa) (`pw:harvest`), [`36791fe4…`](https://stellar.expert/explorer/testnet/tx/36791fe400463f32654ed8b003c7d7c776e5fe9775bc3631ff835e1a41a44654) (`pw:xfer:native`) |
+| Live verify | green — 3 CallContract rules ([EVIDENCE](https://github.com/kunal-drall/policywright/blob/main/evidence/EVIDENCE.md)) |
+| Signing | local-signer fallback (labeled); Freighter preferred when available |
+
+Commands: [Smart-account install](/guides/smart-account-install/). Agent path:
+[MCP tools](/reference/mcp-tools/) + [Claude skill](/reference/claude-skill/)
+(install remains human-signed).
+
+## [BLOCKER] Session recording
+
+No human UI/session video is published yet. Phase 5 evidence will attach it —
+do not invent a link.

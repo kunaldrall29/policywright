@@ -6,11 +6,15 @@ description: Install Policywright, run the offline demo, and record a live Sorob
 import StatusBadge from '../../components/StatusBadge.astro';
 import UnauditedBanner from '../../components/UnauditedBanner.astro';
 
-<StatusBadge status="shipped" />
+<StatusBadge
+  status="shipped"
+  proofHref="https://github.com/kunal-drall/policywright/blob/main/src/demo.ts"
+  proofLabel="src/demo.ts"
+/>
 
 Everything on this page runs today against
-[the repository](https://github.com/kunal-drall/policywright) and — except for
-`record` — needs no network access.
+[the repository](https://github.com/kunal-drall/policywright). The offline demo
+needs no network; live `record` and testnet install are opt-in.
 
 ## Prerequisites
 
@@ -32,107 +36,26 @@ npm ci
 npm run demo
 ```
 
-The demo records the committed fixture, synthesizes the spec, emits the
-artefacts to `out/`, and runs the dry-run scenarios — asserting each behaves as
-expected. It exits non-zero if any scenario deviates, so it doubles as a smoke
-test ([src/demo.ts](https://github.com/kunal-drall/policywright/blob/main/src/demo.ts)).
+Records the committed fixture, synthesizes, emits to `out/`, and asserts dry-run
+scenarios ([src/demo.ts](https://github.com/kunal-drall/policywright/blob/main/src/demo.ts)).
+Committed artefacts:
+[examples/](https://github.com/kunal-drall/policywright/tree/main/examples).
 
-This is the real output (v0.1.0, default config; the final line, which prints
-the machine-specific absolute path of `out/`, is omitted):
+Live (real testnet) artefacts:
+[examples/live/](https://github.com/kunal-drall/policywright/tree/main/examples/live)
+— see [Agent yield operations](/use-cases/agent-yield-operations/).
 
-```text title="npm run demo — summary"
-policywright — synthesized smart-account authorization
-======================================================
-
-Source tx : 3389e9f0f1a32b9c7c1cf3b8a2e5d4c6b7a8901234567890abcdef123456789a
-Network   : testnet (recorded from fixture)
-
-Observed flow
--------------
-  call claim @ CCFZSK3W5W54JT2QPLBDDQ5W4JEIVBG3PUFONKE5YOMS52L6GQIPIV4V
-  call swap_exact_tokens_for_tokens @ CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7
-  in   1234.5 BLND
-  out  1234.5 BLND
-  in   49.38 USDC
-
-Context rule
-------------
-  name        : pw:claim+swap
-  valid until : 1751414400 (unix)
-  scope       :
-    - claim @ CCFZSK3W5W54JT2QPLBDDQ5W4JEIVBG3PUFONKE5YOMS52L6GQIPIV4V
-    - swap_exact_tokens_for_tokens @ CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7
-
-Policies (2)
---------
-  - spending-limit: BLND <= 1357.95 per 86400s (observed gross out 1234.5)
-  - frequency-limit: <= 5 call(s) per 86400s
-
-Argument scopes — advisory (flag only)
---------------
-  - argument-constraint: swap_exact_tokens_for_tokens arg[2] (path) restricted to 2 observed token(s)
-
-Installable OZ context rules (2) — see context-rule.json
-----------------------------
-  pw:claim  CallContract(CCFZSK3W5W54JT2QPLBDDQ5W4JEIVBG3PUFONKE5YOMS52L6GQIPIV4V)
-    valid until ledger 2368821; observed fns: claim
-    - custom:FrequencyLimitPolicy { window_secs: 86400, max_calls: 5 }
-  pw:swap  CallContract(CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7)
-    valid until ledger 2368821; observed fns: swap_exact_tokens_for_tokens
-    - custom:FrequencyLimitPolicy { window_secs: 86400, max_calls: 5 }
-
-  5 composition note(s) in context-rule.json (unit conversions,
-  deltas the stock policies cannot express).
-
-Note: the generated FrequencyLimitPolicy Rust is ILLUSTRATIVE and
-UNAUDITED — a starting point, not deploy-ready code.
-```
-
-```text title="npm run demo — dry-run report"
-# policywright dry-run report
-
-| Scenario | Decision | Reason |
-| --- | --- | --- |
-| replay recorded flow | ✅ permit (permit) | within scope, lifetime, argument, spend cap, and frequency limits |
-| over the spend cap | ⛔ deny (spending-limit) | outflow of 1357.9500001 BLND exceeds the 1357.95 cap per 86400s |
-| call to an unseen function | ⛔ deny (scope) | set_admin @ CBGAPUV74GVQYQYBHMIN4LF5ZEHYIMM4L5VBGUBB4IJXM5D4RQ7275J7 is outside the context rule's scope |
-| call after rule expiry | ⛔ deny (lifetime) | call at 1751414401 is after the rule expires at 1751414400 |
-| over the frequency limit | ⛔ deny (frequency-limit) | this would be call 6 within 86400s, over the cap of 5 |
-| route through an unobserved token | ⚠️ flag (argument-constraint) | swap_exact_tokens_for_tokens path routes through unobserved token(s) CZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ; not enforced (constrainArguments is off) |
-
-All 6 dry-run scenarios behaved as expected.
-```
-
-The same artefacts are committed under
-[examples/](https://github.com/kunal-drall/policywright/tree/main/examples) so
-you can inspect them without running anything.
-
-The addresses and symbols above come from the deterministic fixture, which uses
-labelled synthetic assets — well-formed but synthetic contract addresses
-carrying the symbols BLND, XLM, and USDC (see the
-[fixture's own note](https://github.com/kunal-drall/policywright/blob/main/fixtures/recorded-tx.json)) —
-and is never presented as real USDC. Live demos are planned and not yet published;
-when they are published, they will use the Circle-issued USDC asset on Stellar,
-with the issuer pinned in config and verified against Circle's official
-documentation.
-
-## Synthesize and simulate directly
+## Synthesize and simulate
 
 ```bash
-# Synthesize a spec from the fixture; print the summary + spec.json
 npm run cli -- synth
-
-# Run the dry-run scenarios against the fixture's spec
 npm run cli -- simulate
-
-# Override synthesis knobs (anything omitted keeps its default)
-npm run cli -- synth --lifetime 604800 --cap-multiplier 1.25
 npm run cli -- simulate --constrain-arguments
+npm run cli -- synth --input examples/live/recorded-claim-swap.json
 ```
 
-With `--constrain-arguments`, the unobserved-route scenario (a swap routed
-through a token the recording never touched) is **denied** instead of flagged.
-All flags and defaults are listed in the [CLI reference](/reference/cli/).
+With `--constrain-arguments`, an unobserved swap route is **denied** instead of
+flagged — [argument scope](/guides/argument-scope/).
 
 ## Record a live transaction
 
@@ -140,31 +63,23 @@ All flags and defaults are listed in the [CLI reference](/reference/cli/).
 npm run record -- <txHash> [--network testnet|mainnet|futurenet] [--rpc-url <url>]
 ```
 
-Given a transaction hash within the RPC node's retention window, `record`
-fetches it via Soroban RPC `getTransaction`, decodes the `InvokeContract` calls
-and SEP-41 transfer events into a `RecordedTx`, resolves each token's
-symbol/decimals from its SAC metadata (with an explicit `resolved: false`
-fallback when that is not possible), and prints the recording as JSON
-([src/sources/rpc.ts](https://github.com/kunal-drall/policywright/blob/main/src/sources/rpc.ts)).
+`--network` selects the RPC endpoint for **recording** only (default
+`testnet`). Deploy/install remain **testnet-only** —
+[Smart-account install](/guides/smart-account-install/).
 
-- `--network` defaults to `testnet`; each network has a default public RPC
-  endpoint.
-- `--rpc-url` overrides the endpoint, including a node you run yourself.
-- Not-found, failed-on-chain, wrong-network, and decode failures return clear,
-  actionable errors instead of empty output.
+## Agent tools
 
-The live `record` path is optional: the demo and the test suite never use the
-network.
+```bash
+npm run mcp   # stdio — four tools; no install
+```
+
+See [MCP tools](/reference/mcp-tools/) and [Claude skill](/reference/claude-skill/).
 
 ## The generated Rust policy
 
-The demo also writes `out/FrequencyLimitPolicy.rs`, an illustrative custom
-policy implementing OpenZeppelin's real `Policy` trait — the same source as the
-compiled-and-tested crate at
-[contracts/frequency-limit-policy](https://github.com/kunal-drall/policywright/tree/main/contracts/frequency-limit-policy)
-(25 Rust tests against `stellar-accounts` v0.7.2). Every generated Rust file is
-stamped with this header
-([src/rust-policy.ts](https://github.com/kunal-drall/policywright/blob/main/src/rust-policy.ts)):
+Every generated Rust file is stamped illustrative / unaudited — the same source
+as
+[contracts/frequency-limit-policy](https://github.com/kunal-drall/policywright/tree/main/contracts/frequency-limit-policy).
 
 ```rust title="out/FrequencyLimitPolicy.rs (generated — header excerpt)"
 // =============================================================================
@@ -172,12 +87,6 @@ stamped with this header
 //
 //  Generated contracts are illustrative and unaudited — not for production
 //  deployment until the Audit Bank audit.
-//
-//  This file was generated by policywright as a *starting point* for a custom
-//  OpenZeppelin Stellar smart-account policy. It compiles and its unit tests
-//  run against the real OZ `Policy` trait (stellar-accounts v0.7.2), and
-//  policywright deploys instances to TESTNET only. It has NOT been audited
-//  and MUST NOT be deployed to mainnet or used to guard real value.
 // =============================================================================
 ```
 
