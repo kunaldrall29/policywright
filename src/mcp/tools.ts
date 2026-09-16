@@ -172,18 +172,34 @@ export function toolSimulate(args: Record<string, unknown>): unknown {
 /**
  * MCP `verify` — on-chain / fixture snapshot vs emitted context-rule diff.
  * Does NOT run the offline dry-run scenario self-check.
+ * When `smartAccount` is set, fetches a live snapshot (requires network + .env).
  */
-export function toolVerify(args: Record<string, unknown>): unknown {
+export async function toolVerify(args: Record<string, unknown>): Promise<unknown> {
+  const smartAccount = asOptionalString(args['smartAccount']);
   const snapshotPath = asOptionalString(args['onChainSnapshotPath']);
-  const snapshot =
+  let snapshot: unknown =
     args['onChainSnapshot'] !== undefined
       ? args['onChainSnapshot']
       : snapshotPath !== undefined
         ? readJsonFile(snapshotPath)
         : undefined;
+
+  if (snapshot === undefined && smartAccount !== undefined) {
+    const { fetchOnChainSnapshot } = await import('../verify/fetch.js');
+    const { DEFAULT_FREQUENCY_POLICY } = await import('../cli-env.js');
+    const spendingLimitPolicyAddress = asOptionalString(args['spendingLimitPolicyAddress']);
+    snapshot = await fetchOnChainSnapshot({
+      smartAccount,
+      network: resolveNetwork(asNetwork(args['network'])) ?? 'testnet',
+      frequencyPolicyAddress:
+        asOptionalString(args['frequencyPolicyAddress']) ?? DEFAULT_FREQUENCY_POLICY,
+      ...(spendingLimitPolicyAddress !== undefined ? { spendingLimitPolicyAddress } : {}),
+    });
+  }
+
   if (snapshot === undefined) {
     throw badInput(
-      'verify requires onChainSnapshot or onChainSnapshotPath (committed fixture for offline tests)',
+      'verify requires onChainSnapshot, onChainSnapshotPath, or smartAccount (live fetch)',
     );
   }
 
@@ -212,5 +228,6 @@ export function toolVerify(args: Record<string, unknown>): unknown {
     matchedRules: result.matchedRules,
     expectedRuleCount: result.expectedRuleCount,
     actualRuleCount: result.actualRuleCount,
+    ...(smartAccount !== undefined ? { smartAccount, source: 'rpc' } : {}),
   };
 }

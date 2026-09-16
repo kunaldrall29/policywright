@@ -7,14 +7,26 @@
  *   record <hash...>     fetch a transaction sequence by hash (or ingest a saved
  *                        simulation with --from-simulation) and print the merged
  *                        RecordedTx
- *   verify               diff emitted context-rule.json vs an on-chain snapshot
+ *   verify               diff emitted context-rule.json vs on-chain snapshot
+ *                        (fixture file or live --smart-account fetch)
+ *   account:create       deploy OZ smart account on testnet (Delegated signer)
+ *   install              add_context_rule from emitted context-rule.json (testnet)
  *
  * synth and simulate accept SynthConfig overrides as flags (see USAGE); any
  * flag left out keeps its documented default from DEFAULT_SYNTH_CONFIG.
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { createSmartAccount } from './account/create.js';
+import {
+  DEFAULT_FREQUENCY_POLICY,
+  requireTestnetIdentity,
+  TESTNET_EXPLORER_CONTRACT,
+} from './cli-env.js';
 import { runDemo } from './demo.js';
+import { prepareInstall } from './install/prepare.js';
+import { LOCAL_SIGNER_REASON, submitInstall } from './install/submit.js';
 import {
   pipelineRecord,
   pipelineSimulate,
@@ -25,6 +37,7 @@ import { renderReport } from './simulate.js';
 import { badInput } from './sources/errors.js';
 import { DEFAULT_SYNTH_CONFIG, type Network, type SynthConfig } from './types.js';
 import { verifyAgainstSnapshot } from './verify/diff.js';
+import { fetchOnChainSnapshot } from './verify/fetch.js';
 
 const D = DEFAULT_SYNTH_CONFIG;
 
@@ -37,8 +50,14 @@ Usage:
   npm run record -- <txHash> [<txHash> ...] [record-flags]
   npm run record -- --from-simulation <file.json> [record-flags]
   npm run cli -- verify --context-rule <file> --on-chain-snapshot <file>
-                                          diff emitted context rules + policies
-                                          against an on-chain (or fixture) snapshot
+  npm run cli -- verify --context-rule <file> --smart-account <C…> [--network testnet]
+                                          live fetch + diff (ignores validUntil drift)
+  npm run cli -- account:create [--network testnet]
+                                          deploy OZ smart account (TESTNET ONLY)
+  npm run cli -- install --smart-account <C…> --context-rule <file>
+                 [--frequency-policy <C…>] [--spending-limit-policy <C…>]
+                 [--signer <G…>] [--dry-run] [--network testnet] [--only <name>]
+                                          simulate then submit add_context_rule
 
 Record flags:
   --network <n>            testnet|mainnet|futurenet (testnet)
@@ -67,11 +86,14 @@ Synthesis flags (defaults in parentheses; also apply to simulate):
 
 Verify flags:
   --context-rule <file>      emitted context-rule.json (required)
-  --on-chain-snapshot <file> on-chain snapshot JSON (required; use
-                             fixtures/verify/*.json for offline checks)
+  --on-chain-snapshot <file> on-chain snapshot JSON (offline / fixture path)
+  --smart-account <C…>       live fetch via get_context_rule* (alternative to snapshot)
+  --frequency-policy <C…>    classify FrequencyLimitPolicy on live fetch
+  --spending-limit-policy <C…> classify spending_limit wrapper on live fetch
+  --network <n>              testnet|mainnet|futurenet (testnet)
 
-Networks default to testnet. MCP: npm run mcp (stdio; exactly four tools —
-record / synthesize / simulate / verify; never install).`;
+Install / account:create are TESTNET ONLY. MCP: npm run mcp (stdio; exactly four
+tools — record / synthesize / simulate / verify; never install).`;
 
 /** Minimal `--key value` / `--key=value` flag parser. */
 function parseFlags(args: readonly string[]): Map<string, string> {
@@ -218,17 +240,21 @@ async function cmdRecord(rest: readonly string[]): Promise<void> {
   process.stdout.write(`${recordedTxToJson(tx)}\n`);
 }
 
-function cmdVerify(rest: readonly string[]): void {
+async function cmdVerify(rest: readonly string[]): Promise<void> {
   const flags = parseFlags(rest);
   const contextRulePath = flags.get('context-rule');
   const snapshotPath = flags.get('on-chain-snapshot');
-  if (contextRulePath === undefined || snapshotPath === undefined) {
+  const smartAccount = flags.get('smart-account');
+  if (contextRulePath === undefined) {
+    throw badInput('verify requires --context-rule <file>');
+  }
+  if (snapshotPath === undefined && smartAccount === undefined) {
     throw badInput(
-      'verify requires --context-rule <file> and --on-chain-snapshot <file>',
+      'verify requires --on-chain-snapshot <file> or --smart-account <C…>',
     );
   }
+
   let emitted: unknown;
-  let snapshot: unknown;
   try {
     emitted = JSON.parse(readFileSync(contextRulePath, 'utf8'));
   } catch (cause) {
@@ -236,13 +262,34 @@ function cmdVerify(rest: readonly string[]): void {
       `could not read context-rule file ${contextRulePath}: ${(cause as Error).message}`,
     );
   }
-  try {
-    snapshot = JSON.parse(readFileSync(snapshotPath, 'utf8'));
-  } catch (cause) {
-    throw badInput(
-      `could not read on-chain snapshot file ${snapshotPath}: ${(cause as Error).message}`,
+
+  let snapshot: unknown;
+  if (smartAccount !== undefined) {
+    const network = parseNetwork(flags.get('network'));
+    const spendingLimitPolicyAddress = flags.get('spending-limit-policy');
+    snapshot = await fetchOnChainSnapshot({
+      smartAccount,
+      network,
+      frequencyPolicyAddress: flags.get('frequency-policy') ?? DEFAULT_FREQUENCY_POLICY,
+      ...(spendingLimitPolicyAddress !== undefined
+        ? { spendingLimitPolicyAddress }
+        : {}),
+    });
+    mkdirSync('out', { recursive: true });
+    writeFileSync(
+      resolve('out/on-chain-snapshot.json'),
+      `${JSON.stringify(snapshot, null, 2)}\n`,
     );
+  } else {
+    try {
+      snapshot = JSON.parse(readFileSync(snapshotPath!, 'utf8'));
+    } catch (cause) {
+      throw badInput(
+        `could not read on-chain snapshot file ${snapshotPath}: ${(cause as Error).message}`,
+      );
+    }
   }
+
   const result = verifyAgainstSnapshot({ emitted, snapshot });
   if (!result.ok) {
     process.stderr.write(
@@ -254,8 +301,164 @@ function cmdVerify(rest: readonly string[]): void {
     return;
   }
   process.stdout.write(
-    `verify ok — ${result.matchedRules} context rule(s) match on-chain snapshot.\n`,
+    `verify ok — ${result.matchedRules} context rule(s) match on-chain snapshot` +
+      (smartAccount !== undefined ? ` (live ${smartAccount})` : '') +
+      '.\n',
   );
+}
+
+function cmdAccountCreate(rest: readonly string[]): void {
+  const flags = parseFlags(rest);
+  const networkFlag = flags.get('network');
+  const result =
+    networkFlag !== undefined
+      ? createSmartAccount({ network: networkFlag })
+      : createSmartAccount();
+  process.stdout.write(
+    [
+      `smartAccount: ${result.smartAccount}`,
+      `signer: ${result.signer}`,
+      `deployTx: ${result.deployTxHash ?? 'n/a'}`,
+      `explorer: ${result.explorer.contract}`,
+      result.explorer.deployTx !== null ? `deployExplorer: ${result.explorer.deployTx}` : null,
+      `evidence: appended to evidence/EVIDENCE.md + evidence/demo-addresses.md`,
+    ]
+      .filter((l) => l !== null)
+      .join('\n') + '\n',
+  );
+}
+
+async function cmdInstall(rest: readonly string[]): Promise<void> {
+  const flags = parseFlags(rest);
+  const smartAccount = flags.get('smart-account');
+  const contextRulePath = flags.get('context-rule');
+  if (smartAccount === undefined || contextRulePath === undefined) {
+    throw badInput('install requires --smart-account <C…> and --context-rule <file>');
+  }
+  const network = parseNetwork(flags.get('network'));
+  if (network !== 'testnet') {
+    throw badInput('install is TESTNET ONLY');
+  }
+  const identity = requireTestnetIdentity(flags.get('network'));
+  const signer = flags.get('signer') ?? identity.publicKey;
+  const dryRun = boolFlag(flags, 'dry-run', false);
+  const only = flags.get('only');
+
+  const spendingLimitPolicyAddress = flags.get('spending-limit-policy');
+  const plan = await prepareInstall(
+    spendingLimitPolicyAddress !== undefined
+      ? {
+          contextRulePath,
+          smartAccount,
+          network: 'testnet',
+          frequencyPolicyAddress: flags.get('frequency-policy') ?? DEFAULT_FREQUENCY_POLICY,
+          spendingLimitPolicyAddress,
+          signers: [signer],
+        }
+      : {
+          contextRulePath,
+          smartAccount,
+          network: 'testnet',
+          frequencyPolicyAddress: flags.get('frequency-policy') ?? DEFAULT_FREQUENCY_POLICY,
+          signers: [signer],
+        },
+  );
+
+  process.stdout.write(
+    [
+      `signing: local-signer-fallback`,
+      `reason: ${LOCAL_SIGNER_REASON}`,
+      `preferred: ${plan.signingHierarchy.preferred}`,
+      `ledger.head: ${plan.ledger.latestLedger}`,
+      `validUntilLedger: ${plan.rules[0]?.validUntilLedger ?? 'n/a'}`,
+      `readyToSign: ${plan.readyToSign}`,
+      `rules: ${plan.rules.length}`,
+    ].join('\n') + '\n',
+  );
+
+  for (const rule of plan.rules) {
+    if (rule.blockers.length > 0) {
+      process.stderr.write(
+        `note: rule "${rule.name}" blockers: ${rule.blockers.join('; ')}\n`,
+      );
+    }
+  }
+
+  const installable = plan.rules.filter((r) => r.callArgs !== null);
+  if (installable.length === 0) {
+    throw badInput(
+      `no installable rules — ${plan.rules.flatMap((r) => r.blockers).join('; ') || 'unknown'}`,
+    );
+  }
+
+  let onlyNames: string[] | undefined =
+    only !== undefined ? only.split(',').map((s) => s.trim()) : undefined;
+  if (onlyNames === undefined && installable.length < plan.rules.length) {
+    // Prefer frequency-policy rules so the D2.5 criterion is met even when the
+    // spending-limit wrapper address was not passed.
+    const freq = installable.filter((r) =>
+      r.policies.some((p) => /frequency/i.test(p.policy)),
+    );
+    onlyNames = (freq.length > 0 ? freq : installable).map((r) => r.name);
+    process.stdout.write(
+      `note: installing subset [${onlyNames.join(', ')}] ` +
+        `(${plan.rules.length - installable.length} rule(s) blocked — ` +
+        `pass --spending-limit-policy or --only to control)\n`,
+    );
+  }
+
+  const result = await submitInstall({
+    plan,
+    identity,
+    dryRun,
+    ...(onlyNames !== undefined ? { onlyNames } : {}),
+  });
+
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  if (result.failedNames.length > 0) {
+    process.exitCode = 1;
+  }
+  if (!dryRun && result.installedNames.length > 0) {
+    mkdirSync('out', { recursive: true });
+    writeFileSync('out/install-result.json', `${JSON.stringify(result, null, 2)}\n`);
+    // Write the subset of emitted rules that were installed (for live verify).
+    try {
+      const emittedDoc = JSON.parse(readFileSync(contextRulePath, 'utf8')) as Record<
+        string,
+        unknown
+      >;
+      const installed = new Set(result.installedNames);
+      const rawRules = emittedDoc['contextRules'];
+      const filteredRules: unknown[] = [];
+      if (Array.isArray(rawRules)) {
+        for (const entry of rawRules) {
+          if (typeof entry !== 'object' || entry === null) continue;
+          const record = entry as Record<string, unknown>;
+          const name = record['name'];
+          if (typeof name === 'string' && installed.has(name)) {
+            filteredRules.push(entry);
+          }
+        }
+      }
+      const subset = {
+        ...emittedDoc,
+        contextRules: filteredRules,
+        installNote:
+          result.installedNames.length < plan.rules.length
+            ? `subset install: ${result.installedNames.join(', ')}`
+            : 'full install',
+      };
+      writeFileSync(
+        'out/installed-context-rule.json',
+        `${JSON.stringify(subset, null, 2)}\n`,
+      );
+    } catch {
+      // non-fatal
+    }
+    process.stdout.write(
+      `explorer.account: ${TESTNET_EXPLORER_CONTRACT}${smartAccount}\n`,
+    );
+  }
 }
 
 async function main(): Promise<void> {
@@ -278,7 +481,13 @@ async function main(): Promise<void> {
       await cmdRecord(rest);
       return;
     case 'verify':
-      cmdVerify(rest);
+      await cmdVerify(rest);
+      return;
+    case 'account:create':
+      cmdAccountCreate(rest);
+      return;
+    case 'install':
+      await cmdInstall(rest);
       return;
     case undefined:
     case 'help':

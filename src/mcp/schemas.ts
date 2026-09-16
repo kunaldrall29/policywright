@@ -96,8 +96,8 @@ export const TOOL_INPUT_SCHEMAS = {
     type: 'object',
     description:
       'Diff emitted context-rule.json (+ policies) against an on-chain snapshot. ' +
-      'NOT the offline dry-run self-check. Provide onChainSnapshot (or path) and either ' +
-      'contextRule / contextRulePath, or a recording to synthesize first.',
+      'NOT the offline dry-run self-check. Provide onChainSnapshot (or path), or smartAccount ' +
+      'for a live RPC fetch, and either contextRule / contextRulePath, or a recording to synthesize first.',
     properties: {
       schemaVersion: {
         type: 'integer',
@@ -114,6 +114,24 @@ export const TOOL_INPUT_SCHEMAS = {
       onChainSnapshotPath: {
         type: 'string',
         description: 'Path to an on-chain snapshot JSON fixture.',
+      },
+      smartAccount: {
+        type: 'string',
+        description:
+          'Live C… smart-account address — fetches get_context_rules_count / get_context_rule via RPC (requires network).',
+      },
+      frequencyPolicyAddress: {
+        type: 'string',
+        description: 'Optional FrequencyLimitPolicy C… used to classify live policy attachments.',
+      },
+      spendingLimitPolicyAddress: {
+        type: 'string',
+        description: 'Optional spending-limit wrapper C… used to classify live policy attachments.',
+      },
+      network: {
+        type: 'string',
+        enum: [...NETWORK_ENUM],
+        description: 'Network for live fetch (default testnet / STELLAR_NETWORK).',
       },
       inputPath: {
         type: 'string',

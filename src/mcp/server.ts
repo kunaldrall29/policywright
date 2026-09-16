@@ -36,10 +36,10 @@ const TOOL_DESCRIPTIONS = {
     'Always dry-run before concluding a policy is safe to install.',
   verify:
     'Diff emitted context-rule.json (+ attached policy install params) against an ' +
-    'on-chain smart-account snapshot (or a committed fixture snapshot for offline tests). ' +
+    'on-chain smart-account snapshot (fixture path or live smartAccount fetch). ' +
     'This is the on-chain/spec reconciliation — NOT the offline dry-run self-check. ' +
-    'Deterministic per (emitted spec, chain state / snapshot). Pass onChainSnapshotPath ' +
-    'pointing at fixtures/verify/*.json for network-free verification.',
+    'Pass onChainSnapshotPath pointing at fixtures/verify/*.json for network-free verification. ' +
+    'Optional smartAccount triggers a live get_context_rule* fetch (requires network + .env).',
 } as const;
 
 const TOOL_NAMES = ['record', 'synthesize', 'simulate', 'verify'] as const;
@@ -94,7 +94,7 @@ async function main(): Promise<void> {
           result = toolSimulate(args);
           break;
         case 'verify':
-          result = toolVerify(args);
+          result = await toolVerify(args);
           break;
       }
       return {
