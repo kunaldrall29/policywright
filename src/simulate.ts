@@ -22,6 +22,19 @@ import type {
   SpendingLimitPolicy,
 } from './types.js';
 
+/**
+ * Real Blend testnet BLND mint (FACTS §4 / Gate 4). Used for the D2.3
+ * criterion scenario labeled BLND→XLM — distinct from the synthetic CZZZ
+ * unobserved-token probe and from fixture placeholder addresses.
+ */
+export const FACTS_BLND = 'CB22KRA3YZVCNCQI64JQ5WE7UY2VAV7WFLK6A2JN3HEX56T2EDAFO7QF';
+
+/**
+ * Testnet native/XLM SAC — path[0] on the live claim→swap recording
+ * (`examples/live/recorded-claim-swap.json`) and FACTS §4.
+ */
+export const FACTS_XLM_NATIVE = 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
+
 /** A named dry-run scenario plus the decision it is expected to produce. */
 export interface Scenario {
   readonly candidate: CandidateCall;
@@ -267,21 +280,42 @@ export function buildScenarios(spec: SmartAccountSpec, tx: RecordedTx): Scenario
   // constrainArguments is enabled, flagged (advisory) when it is not.
   const argScope = spec.argumentScopes[0];
   if (argScope !== undefined) {
+    const argDecision = spec.config.constrainArguments ? 'deny' : 'flag';
     const unobservedToken = `C${'Z'.repeat(55)}`;
     const allowed = argScope.allowedTokens[0] ?? unobservedToken;
-    const args: CallArg[] = Array.from({ length: argScope.argIndex }, () => null);
-    args.push([allowed, unobservedToken]);
+    const syntheticArgs: CallArg[] = Array.from({ length: argScope.argIndex }, () => null);
+    syntheticArgs.push([allowed, unobservedToken]);
     scenarios.push({
       candidate: {
         label: 'route through an unobserved token',
         contract: argScope.contract,
         fnName: argScope.fnName,
-        args,
+        args: syntheticArgs,
         outflows: [],
         timestamp: base + 60,
         priorCallTimestamps: [],
       },
-      expectedDecision: spec.config.constrainArguments ? 'deny' : 'flag',
+      expectedDecision: argDecision,
+      expectedReasonCode: 'argument-constraint',
+    });
+
+    // Criterion case (D2.3): BLND→XLM with real testnet contract IDs from
+    // FACTS §4 / the live claim→swap recording. On the live sequence the
+    // observed path is XLM(native)→USDC, so BLND is unobserved and this
+    // route flags (default) or denies (--constrain-arguments).
+    const blndXlmArgs: CallArg[] = Array.from({ length: argScope.argIndex }, () => null);
+    blndXlmArgs.push([FACTS_BLND, FACTS_XLM_NATIVE]);
+    scenarios.push({
+      candidate: {
+        label: 'BLND→XLM (unobserved route)',
+        contract: argScope.contract,
+        fnName: argScope.fnName,
+        args: blndXlmArgs,
+        outflows: [],
+        timestamp: base + 60,
+        priorCallTimestamps: [],
+      },
+      expectedDecision: argDecision,
       expectedReasonCode: 'argument-constraint',
     });
   }
@@ -289,13 +323,35 @@ export function buildScenarios(spec: SmartAccountSpec, tx: RecordedTx): Scenario
   return scenarios;
 }
 
+/** Optional preamble for committed dry-run reports. */
+export interface ReportMeta {
+  readonly source?: string;
+  readonly constrainArguments?: boolean;
+}
+
 /** Render dry-run results as a Markdown report. */
-export function renderReport(results: readonly SimulationResult[]): string {
+export function renderReport(
+  results: readonly SimulationResult[],
+  meta?: ReportMeta,
+): string {
   const icon = (d: SimulationResult['decision']): string =>
     d === 'permit' ? '✅' : d === 'flag' ? '⚠️' : '⛔';
   const lines: string[] = [];
   lines.push('# policywright dry-run report');
   lines.push('');
+  if (meta !== undefined) {
+    if (meta.source !== undefined) {
+      lines.push(`Source: \`${meta.source}\``);
+    }
+    if (meta.constrainArguments !== undefined) {
+      lines.push(
+        meta.constrainArguments
+          ? 'constrainArguments: **on** (argument constraints enforced — unobserved routes DENIED)'
+          : 'constrainArguments: **off** (default — unobserved routes FLAG / advisory only)',
+      );
+    }
+    lines.push('');
+  }
   lines.push('| Scenario | Decision | Reason |');
   lines.push('| --- | --- | --- |');
   for (const r of results) {
