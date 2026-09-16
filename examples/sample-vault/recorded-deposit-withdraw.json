@@ -1,0 +1,87 @@
+{
+  "hash": "e14610110c2cd5f760455664c66e96cb1cfc9093f81c21353eff0a4976f623b0",
+  "network": "testnet",
+  "source": "rpc",
+  "ledger": 4713361,
+  "timestamp": 1789590392,
+  "subject": "GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY",
+  "calls": [
+    {
+      "contract": "CDEYULOATO7CGEAOOZR2GHHLRRZL4TRYD4NUWNXUHUOBD7P2SU2S5RVB",
+      "fnName": "deposit",
+      "args": [
+        "GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY",
+        "10000000"
+      ],
+      "sourceHash": "e14610110c2cd5f760455664c66e96cb1cfc9093f81c21353eff0a4976f623b0",
+      "authorizations": [
+        {
+          "contract": "CDEYULOATO7CGEAOOZR2GHHLRRZL4TRYD4NUWNXUHUOBD7P2SU2S5RVB",
+          "fnName": "deposit",
+          "args": [
+            "GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY",
+            "10000000"
+          ],
+          "subInvocations": [
+            {
+              "contract": "CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3",
+              "fnName": "transfer",
+              "args": [
+                "GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY",
+                "CDEYULOATO7CGEAOOZR2GHHLRRZL4TRYD4NUWNXUHUOBD7P2SU2S5RVB",
+                "10000000"
+              ],
+              "subInvocations": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "contract": "CDEYULOATO7CGEAOOZR2GHHLRRZL4TRYD4NUWNXUHUOBD7P2SU2S5RVB",
+      "fnName": "withdraw",
+      "args": [
+        "GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY",
+        "4000000"
+      ],
+      "sourceHash": "3d0113ff3cf56773f8064f100d14c9e3d785e19c4a0d588bb4ea5ba6ceda2322",
+      "authorizations": [
+        {
+          "contract": "CDEYULOATO7CGEAOOZR2GHHLRRZL4TRYD4NUWNXUHUOBD7P2SU2S5RVB",
+          "fnName": "withdraw",
+          "args": [
+            "GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY",
+            "4000000"
+          ],
+          "subInvocations": []
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "asset": {
+        "contractId": "CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3",
+        "symbol": "CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3",
+        "decimals": 7,
+        "resolved": false
+      },
+      "direction": "out",
+      "amount": "10000000"
+    },
+    {
+      "asset": {
+        "contractId": "CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3",
+        "symbol": "CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3",
+        "decimals": 7,
+        "resolved": false
+      },
+      "direction": "in",
+      "amount": "4000000"
+    }
+  ],
+  "warnings": [
+    "token metadata for CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3 could not be resolved; symbol falls back to the contract id and decimals to 7 (flagged resolved: false)",
+    "token metadata for CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3 could not be resolved; symbol falls back to the contract id and decimals to 7 (flagged resolved: false)"
+  ]
+}
