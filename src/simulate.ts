@@ -22,6 +22,19 @@ import type {
   SpendingLimitPolicy,
 } from './types.js';
 
+/**
+ * Real Blend testnet BLND mint (FACTS §4 / Gate 4). Used for the D2.3
+ * criterion scenario labeled BLND→XLM — distinct from the synthetic CZZZ
+ * unobserved-token probe and from fixture placeholder addresses.
+ */
+export const FACTS_BLND = 'CB22KRA3YZVCNCQI64JQ5WE7UY2VAV7WFLK6A2JN3HEX56T2EDAFO7QF';
+
+/**
+ * Testnet native/XLM SAC — path[0] on the live claim→swap recording
+ * (`examples/live/recorded-claim-swap.json`) and FACTS §4.
+ */
+export const FACTS_XLM_NATIVE = 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
+
 /** A named dry-run scenario plus the decision it is expected to produce. */
 export interface Scenario {
   readonly candidate: CandidateCall;
@@ -267,21 +280,42 @@ export function buildScenarios(spec: SmartAccountSpec, tx: RecordedTx): Scenario
   // constrainArguments is enabled, flagged (advisory) when it is not.
   const argScope = spec.argumentScopes[0];
   if (argScope !== undefined) {
+    const argDecision = spec.config.constrainArguments ? 'deny' : 'flag';
     const unobservedToken = `C${'Z'.repeat(55)}`;
     const allowed = argScope.allowedTokens[0] ?? unobservedToken;
-    const args: CallArg[] = Array.from({ length: argScope.argIndex }, () => null);
-    args.push([allowed, unobservedToken]);
+    const syntheticArgs: CallArg[] = Array.from({ length: argScope.argIndex }, () => null);
+    syntheticArgs.push([allowed, unobservedToken]);
     scenarios.push({
       candidate: {
         label: 'route through an unobserved token',
         contract: argScope.contract,
         fnName: argScope.fnName,
-        args,
+        args: syntheticArgs,
         outflows: [],
         timestamp: base + 60,
         priorCallTimestamps: [],
       },
-      expectedDecision: spec.config.constrainArguments ? 'deny' : 'flag',
+      expectedDecision: argDecision,
+      expectedReasonCode: 'argument-constraint',
+    });
+
+    // Criterion case (D2.3): BLND→XLM with real testnet contract IDs from
+    // FACTS §4 / the live claim→swap recording. On the live sequence the
+    // observed path is XLM(native)→USDC, so BLND is unobserved and this
+    // route flags (default) or denies (--constrain-arguments).
+    const blndXlmArgs: CallArg[] = Array.from({ length: argScope.argIndex }, () => null);
+    blndXlmArgs.push([FACTS_BLND, FACTS_XLM_NATIVE]);
+    scenarios.push({
+      candidate: {
+        label: 'BLND→XLM (unobserved route)',
+        contract: argScope.contract,
+        fnName: argScope.fnName,
+        args: blndXlmArgs,
+        outflows: [],
+        timestamp: base + 60,
+        priorCallTimestamps: [],
+      },
+      expectedDecision: argDecision,
       expectedReasonCode: 'argument-constraint',
     });
   }
@@ -289,20 +323,112 @@ export function buildScenarios(spec: SmartAccountSpec, tx: RecordedTx): Scenario
   return scenarios;
 }
 
+/** Optional preamble for committed dry-run reports. */
+export interface ReportMeta {
+  readonly source?: string;
+  readonly constrainArguments?: boolean;
+}
+
+const RESULT_ICON = (d: SimulationResult['decision']): string =>
+  d === 'permit' ? '✅' : d === 'flag' ? '⚠️' : '⛔';
+
 /** Render dry-run results as a Markdown report. */
-export function renderReport(results: readonly SimulationResult[]): string {
-  const icon = (d: SimulationResult['decision']): string =>
-    d === 'permit' ? '✅' : d === 'flag' ? '⚠️' : '⛔';
+export function renderReport(results: readonly SimulationResult[], meta?: ReportMeta): string {
   const lines: string[] = [];
   lines.push('# policywright dry-run report');
   lines.push('');
+  if (meta !== undefined) {
+    if (meta.source !== undefined) {
+      lines.push(`Source: \`${meta.source}\``);
+    }
+    if (meta.constrainArguments !== undefined) {
+      lines.push(
+        meta.constrainArguments
+          ? 'constrainArguments: **on** (argument constraints enforced — unobserved routes DENIED)'
+          : 'constrainArguments: **off** (default — unobserved routes FLAG / advisory only)',
+      );
+    }
+    lines.push('');
+  }
   lines.push('| Scenario | Decision | Reason |');
   lines.push('| --- | --- | --- |');
   for (const r of results) {
     lines.push(
-      `| ${r.label} | ${icon(r.decision)} ${r.decision} (${r.reasonCode}) | ${r.reason} |`,
+      `| ${r.label} | ${RESULT_ICON(r.decision)} ${r.decision} (${r.reasonCode}) | ${r.reason} |`,
     );
   }
+  lines.push('');
+  return lines.join('\n');
+}
+
+/**
+ * D2.4 criterion report: both the composed stock `spending_limit` and the
+ * generated `FrequencyLimitPolicy` attach to one conceptual authorization and
+ * are exercised by the offline harness (permit original; deny over-cap;
+ * deny repeat-within-window).
+ */
+export function renderComposeAndGenerateReport(
+  results: readonly SimulationResult[],
+  source: string,
+): string {
+  const byLabel = new Map(results.map((r) => [r.label, r]));
+  const require = (label: string): SimulationResult => {
+    const r = byLabel.get(label);
+    if (r === undefined) {
+      throw new Error(`compose+generate report missing scenario "${label}"`);
+    }
+    return r;
+  };
+  const permit = require('replay recorded flow');
+  const overCap = require('over the spend cap');
+  const overFreq = require('over the frequency limit');
+
+  const row = (r: SimulationResult, constraint: string): string =>
+    `| ${r.label} | ${RESULT_ICON(r.decision)} ${r.decision} (${r.reasonCode}) | ${constraint} | ${r.reason} |`;
+
+  const lines: string[] = [
+    '# policywright dry-run report — compose + generate (D2.4)',
+    '',
+    `Source: \`${source}\``,
+    '',
+    'Criterion: *Generates both a composed-policy configuration and a net-new',
+    'stateful policy contract; both compile and pass simulation.*',
+    '',
+    'Both constraints attach to one conceptual authorization derived from this',
+    'recording (see [`context-rule.json`](./context-rule.json)):',
+    '',
+    '| Constraint | Mechanism | Install artifact |',
+    '| --- | --- | --- |',
+    '| Spend cap (native XLM) | **Composed** stock `spending_limit` | `pw:xfer:native` → `stock:spending_limit` `{ spending_limit, period_ledgers }` — OZ `spending_limit.rs:88-94` |',
+    '| Call frequency | **Generated** `FrequencyLimitPolicy` | `custom:FrequencyLimitPolicy` `{ window_secs, max_calls }` — [`contracts/frequency-limit-policy`](../../contracts/frequency-limit-policy) |',
+    '',
+    '## Criterion scenarios',
+    '',
+    '| Scenario | Decision | Constraint class | Reason |',
+    '| --- | --- | --- | --- |',
+    row(permit, '— (baseline)'),
+    row(overCap, '**composed** spending_limit'),
+    row(overFreq, '**generated** FrequencyLimitPolicy'),
+    '',
+    '## Full harness table',
+    '',
+    '| Scenario | Decision | Reason |',
+    '| --- | --- | --- |',
+  ];
+  for (const r of results) {
+    lines.push(
+      `| ${r.label} | ${RESULT_ICON(r.decision)} ${r.decision} (${r.reasonCode}) | ${r.reason} |`,
+    );
+  }
+  lines.push('');
+  lines.push('## Reproduce');
+  lines.push('');
+  lines.push('```bash');
+  lines.push('npm run --silent cli -- simulate --input examples/live/recorded-claim-swap.json');
+  lines.push('```');
+  lines.push('');
+  lines.push('See [docs/compose-vs-generate.md](../../docs/compose-vs-generate.md) for the');
+  lines.push('compose-first decision boundary and proof links.');
   lines.push('');
   return lines.join('\n');
 }

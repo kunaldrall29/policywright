@@ -1,0 +1,20 @@
+## garbage hash
+[BAD_INPUT] "not-a-hash" is not a 64-character hex transaction hash
+
+## nonexistent 64-hex
+[TX_NOT_FOUND] transaction aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa not found on testnet. Public RPC nodes only retain recent history (this node: ledgers 4592458–4713417, oldest closed 2026-09-09T20:31:17.000Z, about 7 days); older transactions must be recorded from a saved capture or an archival node. Also check the hash is on the right network.
+
+## empty sequence
+[BAD_INPUT] record requires hashes, fromSimulation, or recordedTx (or call synthesize with the fixture)
+
+## duplicates
+[BAD_INPUT] duplicate transaction hashes given; each hash records once
+
+## mainnet hash vs testnet
+[TX_NOT_FOUND] transaction 79177c10c74e1ca1e1bf1b2bc1381dd41d1295efc134722d18a99aa452355e88 not found on testnet. Public RPC nodes only retain recent history (this node: ledgers 4592459–4713418, oldest closed 2026-09-09T20:31:22.000Z, about 7 days); older transactions must be recorded from a saved capture or an archival node. Also check the hash is on the right network.
+
+## zero involvement
+[BAD_INPUT] --account GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY has no involvement in the given transaction(s) (not a source account, transfer counterparty, call argument, or authorization party). Pass the economic actor (often a C… smart account), or omit --account to attribute movements to the first transaction's source account.
+
+## MCP malformed
+{"schemaVersion":1,"ok":false,"code":"BAD_INPUT","message":"[BAD_INPUT] hashes must be an array of strings"}

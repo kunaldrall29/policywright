@@ -1,0 +1,81 @@
+---
+title: Smart-account install
+description: Testnet-only create, install, and live verify — Freighter preferred.
+---
+
+import StatusBadge from '../../../components/StatusBadge.astro';
+import UnauditedBanner from '../../../components/UnauditedBanner.astro';
+
+<StatusBadge
+  status="shipped-testnet"
+  proofHref="https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT"
+  proofLabel="CAXBVHXP…"
+/>
+
+:::caution
+**Testnet only.** `account:create` and `install` refuse non-testnet networks.
+Do not deploy generated contracts or installed rules to mainnet.
+:::
+
+<UnauditedBanner />
+
+Canonical guide:
+[docs/smart-account-install.md](https://github.com/kunal-drall/policywright/blob/main/docs/smart-account-install.md).
+
+## Signing hierarchy
+
+1. **Preferred:** browser Freighter via `stellar-wallets-kit` `signAuthEntry`
+   (secret never leaves the wallet).
+2. **Fallback (this CLI path):** local ed25519 from `.env` via stellar-cli.
+   The CLI **always** prints `signing: local-signer-fallback` and the reason
+   string. Never claim Freighter signed when the fallback ran.
+
+### [BLOCKER] Freighter interactive step
+
+When using Freighter, the human must confirm the wallet popup for each
+`add_context_rule` auth entry. Headless agents use the local-signer fallback.
+
+## Commands
+
+```bash
+# 1. Create OZ smart account (Delegated G signer)
+npm run cli -- account:create --network testnet
+
+# 2. Synthesize (or use committed examples/live/context-rule.json)
+npm run cli -- synth --input examples/live/recorded-claim-swap.json
+
+# 3. Install (simulate then submit)
+npm run cli -- install \
+  --smart-account CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT \
+  --context-rule examples/live/context-rule.json \
+  --frequency-policy CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP \
+  --spending-limit-policy <C… spending-limit wrapper> \
+  --signer <G…> \
+  --network testnet
+
+# 4. Live verify
+npm run cli -- verify \
+  --context-rule out/installed-context-rule.json \
+  --smart-account CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT \
+  --frequency-policy CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP \
+  --network testnet
+```
+
+Useful flags: `--dry-run` (simulate only), `--only pw:swap,pw:harvest`
+(subset). Install recomputes `validUntilLedger` from the live ledger head.
+
+## Proven install (2026-09-16)
+
+| Item | Value |
+| ---- | ----- |
+| Smart account | [`CAXBVHXP…`](https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT) |
+| FrequencyLimitPolicy | [`CDSVPSTS…`](https://stellar.expert/explorer/testnet/contract/CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP) |
+| Install txs | `pw:swap` [`5907ecbf…`](https://stellar.expert/explorer/testnet/tx/5907ecbf76be7738fc1468dbfb4023a4833fe63a011dbe73b85268ce9b6fe8da), `pw:harvest` [`589faaad…`](https://stellar.expert/explorer/testnet/tx/589faaad0a4ff19fed88b5fe9714f21d930b4b541b9b24469d34868bb54b30aa), `pw:xfer:native` [`36791fe4…`](https://stellar.expert/explorer/testnet/tx/36791fe400463f32654ed8b003c7d7c776e5fe9775bc3631ff835e1a41a44654) |
+| Signing used | local-signer fallback (OZ Delegated AuthPayload) |
+| Log | [evidence/EVIDENCE.md](https://github.com/kunal-drall/policywright/blob/main/evidence/EVIDENCE.md) |
+
+## MCP
+
+Exactly four tools (`record` / `synthesize` / `simulate` / `verify`).
+**Never** `install`. MCP `verify` may pass `smartAccount` for the same live
+fetch library the CLI uses.

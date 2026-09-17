@@ -1,10 +1,122 @@
 ---
 title: MCP tools
-description: MCP tool schemas for Policywright.
+description: Four stdio MCP tools — schemas, errors, determinism, no install tool.
 ---
 
 import StatusBadge from '../../../components/StatusBadge.astro';
+import UnauditedBanner from '../../../components/UnauditedBanner.astro';
 
-<StatusBadge status="planned" />
+<StatusBadge
+  status="shipped"
+  proofHref="https://github.com/kunal-drall/policywright/blob/main/docs/mcp-server.md"
+  proofLabel="docs/mcp-server.md"
+/>
 
-Planned — Tranche 2.
+policywright speaks **stdio MCP** with **exactly four tools**: `record`,
+`synthesize`, `simulate`, `verify`.
+
+There is **no** `install`, `deploy`, or `prepare_install` MCP tool — **by
+design**. Installation is a separate human-signed CLI / wallet step. Agents
+must never claim they installed a rule.
+
+Full server docs:
+[docs/mcp-server.md](https://github.com/kunal-drall/policywright/blob/main/docs/mcp-server.md).
+Schemas live in
+[`src/mcp/schemas.ts`](https://github.com/kunal-drall/policywright/blob/main/src/mcp/schemas.ts).
+
+<UnauditedBanner />
+
+## Start / stdio registration
+
+```bash
+npm run mcp
+# → tsx src/mcp/server.ts  (stdio)
+```
+
+Claude Desktop / Claude Code (`claude_desktop_config.json` or `.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "policywright": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp/server.ts"],
+      "cwd": "/absolute/path/to/policywright"
+    }
+  }
+}
+```
+
+Or after `npm run build`: `node dist/mcp/server.js`. RPC endpoint and network
+come from tool args or env (`STELLAR_RPC_URL`, `STELLAR_NETWORK`) — never
+hardcoded secrets. The server **never signs**.
+
+## Tools
+
+| Tool | Role | Determinism |
+| ---- | ---- | ----------- |
+| `record` | Hashes / simulation / inline RecordedTx → merged recording | Deterministic per (input, chain state) |
+| `synthesize` | Recording → context rules + policies + generated Rust | **Pure** given recording + SynthConfig |
+| `simulate` | Dry-run permit/deny/flag scenarios | **Pure** given recording + SynthConfig |
+| `verify` | Diff emitted `context-rule.json` vs on-chain (or fixture) snapshot | Deterministic per (emitted spec, chain state / snapshot) |
+
+`verify` is **on-chain / spec reconciliation**, not the offline dry-run
+self-check (`npm run demo`). Map:
+[docs/mcp-determinism.md](https://github.com/kunal-drall/policywright/blob/main/docs/mcp-determinism.md).
+
+### Shared SynthConfig fields (synthesize / simulate / verify)
+
+| Field | Meaning |
+| ----- | ------- |
+| `lifetimeSecs` | Context-rule lifetime |
+| `spendWindowSecs` | Spend-cap window |
+| `capMultiplier` | Cap = gross outflow × this |
+| `frequencyWindowSecs` / `frequencyMaxCalls` | Frequency limit |
+| `constrainArguments` | `true` → unobserved swap paths **deny**; default `false` → **flag** |
+
+### `record` input
+
+`hashes[]`, optional `network` (`testnet` \| `mainnet` \| `futurenet`),
+`rpcUrl`, `account`, `fromSimulation`, inline `recordedTx`, `outputPath`.
+
+### `synthesize` output fields
+
+`summary`, `spec`, `contextRule`, `rustPolicy`, `notes`, `warnings`, `config`,
+`unauditedBanner`.
+
+### `simulate` output fields
+
+`report`, `results`, `constrainArguments`.
+
+### `verify` input / output
+
+Provide `contextRule` / `contextRulePath`, plus `onChainSnapshot` /
+`onChainSnapshotPath` **or** live `smartAccount` (+ optional policy
+addresses). Output: `ok`, `diffs`, `matchedRules`, rule counts.
+
+## Error codes
+
+Machine-readable envelope from
+[`src/mcp/errors.ts`](https://github.com/kunal-drall/policywright/blob/main/src/mcp/errors.ts):
+
+| Code | Origin |
+| ---- | ------ |
+| `BAD_INPUT` | Recorder / validation |
+| `TX_NOT_FOUND` | RPC retention / missing tx |
+| `NETWORK` | RPC transport |
+| `DECODE_FAILED` | Envelope / event decode |
+| `VERIFY_MISMATCH` | Spec vs on-chain diff |
+| `INTERNAL` | Unexpected |
+
+## Offline tests
+
+`npm test` spawns the server over stdio and calls all four tools against
+committed fixtures —
+[`test/mcp-stdio.test.ts`](https://github.com/kunal-drall/policywright/blob/main/test/mcp-stdio.test.ts).
+
+## [BLOCKER] Human reference session
+
+A human must record the live agent session per
+[docs/mcp-reference-session.md](https://github.com/kunal-drall/policywright/blob/main/docs/mcp-reference-session.md)
+and store it under `evidence/` (Phase 5). CI covers stdio tool calls only — no
+video link is invented here.

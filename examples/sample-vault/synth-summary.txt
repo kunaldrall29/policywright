@@ -1,0 +1,188 @@
+policywright — synthesized smart-account authorization
+======================================================
+
+Source tx : e14610110c2cd5f760455664c66e96cb1cfc9093f81c21353eff0a4976f623b0
+Network   : testnet (recorded from rpc)
+
+Observed flow
+-------------
+  call deposit @ CDEYULOATO7CGEAOOZR2GHHLRRZL4TRYD4NUWNXUHUOBD7P2SU2S5RVB
+  call withdraw @ CDEYULOATO7CGEAOOZR2GHHLRRZL4TRYD4NUWNXUHUOBD7P2SU2S5RVB
+  out  1 CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3 (unresolved)
+  in   0.4 CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3 (unresolved)
+
+Context rule
+------------
+  name        : pw:deposit+withdraw
+  valid until : 1792182392 (unix)
+  scope       :
+    - deposit @ CDEYULOATO7CGEAOOZR2GHHLRRZL4TRYD4NUWNXUHUOBD7P2SU2S5RVB
+    - withdraw @ CDEYULOATO7CGEAOOZR2GHHLRRZL4TRYD4NUWNXUHUOBD7P2SU2S5RVB
+
+Policies (2)
+--------
+  - spending-limit: CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3 (unresolved) <= 1.1 per 86400s (observed gross out 1)
+  - frequency-limit: <= 5 call(s) per 86400s
+
+Installable OZ context rules (2) — see context-rule.json
+----------------------------
+  pw:deposit+withdraw  CallContract(CDEYULOATO7CGEAOOZR2GHHLRRZL4TRYD4NUWNXUHUOBD7P2SU2S5RVB)
+    valid until ledger 5231761; observed fns: deposit, withdraw
+    - custom:FrequencyLimitPolicy { window_secs: 86400, max_calls: 5 }
+  pw:xfer:CCQWXNKS  CallContract(CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3)
+    valid until ledger 5231761; observed fns: transfer
+    - stock:spending_limit { spending_limit: 11000000, period_ledgers: 17280 } (caps CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3 (unresolved) transfers)
+
+  5 composition note(s) in context-rule.json (unit conversions,
+  deltas the stock policies cannot express).
+
+Note: the generated FrequencyLimitPolicy Rust is ILLUSTRATIVE and
+UNAUDITED — a starting point, not deploy-ready code.
+
+--- spec.json ---
+{
+  "contextRule": {
+    "name": "pw:deposit+withdraw",
+    "scopedCalls": [
+      {
+        "contract": "CDEYULOATO7CGEAOOZR2GHHLRRZL4TRYD4NUWNXUHUOBD7P2SU2S5RVB",
+        "fnName": "deposit"
+      },
+      {
+        "contract": "CDEYULOATO7CGEAOOZR2GHHLRRZL4TRYD4NUWNXUHUOBD7P2SU2S5RVB",
+        "fnName": "withdraw"
+      }
+    ],
+    "validUntil": 1792182392
+  },
+  "policies": [
+    {
+      "kind": "spending-limit",
+      "asset": {
+        "contractId": "CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3",
+        "symbol": "CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3",
+        "decimals": 7,
+        "resolved": false
+      },
+      "cap": "11000000",
+      "windowSecs": 86400,
+      "observedGrossOut": "10000000"
+    },
+    {
+      "kind": "frequency-limit",
+      "windowSecs": 86400,
+      "maxCalls": 5
+    }
+  ],
+  "argumentScopes": [],
+  "argumentScopesEnforced": false,
+  "warnings": [],
+  "config": {
+    "lifetimeSecs": 2592000,
+    "spendWindowSecs": 86400,
+    "capMultiplier": 1.1,
+    "frequencyWindowSecs": 86400,
+    "frequencyMaxCalls": 5,
+    "constrainArguments": false
+  }
+}
+
+--- context-rule.json ---
+{
+  "schemaVersion": 1,
+  "generatedBy": "policywright",
+  "target": {
+    "package": "stellar-accounts (OpenZeppelin/stellar-contracts)",
+    "version": "v0.7.2",
+    "commit": "a9c42169000638da937577f592ebf61a7a3c94ca",
+    "installEntryPoint": "SmartAccount::add_context_rule(context_type, name, valid_until, signers, policies: Map<Address, Val>) — packages/accounts/src/smart_account/mod.rs:238-248"
+  },
+  "source": {
+    "network": "testnet",
+    "recordedFrom": "rpc",
+    "subject": "GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY",
+    "ledger": 4713361,
+    "sourceHashes": [
+      "e14610110c2cd5f760455664c66e96cb1cfc9093f81c21353eff0a4976f623b0",
+      "3d0113ff3cf56773f8064f100d14c9e3d785e19c4a0d588bb4ea5ba6ceda2322"
+    ]
+  },
+  "ledgerTimeBasis": {
+    "estimatedSecsPerLedger": 5,
+    "note": "every *_ledgers and validUntilLedger value was converted from configured seconds at this estimated rate; recompute validUntilLedger from the live ledger head at install"
+  },
+  "contextRules": [
+    {
+      "contextType": {
+        "type": "CallContract",
+        "contract": "CDEYULOATO7CGEAOOZR2GHHLRRZL4TRYD4NUWNXUHUOBD7P2SU2S5RVB"
+      },
+      "name": "pw:deposit+withdraw",
+      "validUntilLedger": 5231761,
+      "signers": [],
+      "observedFns": [
+        "deposit",
+        "withdraw"
+      ],
+      "policies": [
+        {
+          "policy": "custom:FrequencyLimitPolicy",
+          "address": null,
+          "installParams": {
+            "window_secs": 86400,
+            "max_calls": 5
+          },
+          "paramsSource": "policywright-generated FrequencyLimitPolicy (contracts/frequency-limit-policy, emitted by src/rust-policy.ts) — FrequencyLimitParams { window_secs: u64, max_calls: u32 }"
+        }
+      ]
+    },
+    {
+      "contextType": {
+        "type": "CallContract",
+        "contract": "CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3"
+      },
+      "name": "pw:xfer:CCQWXNKS",
+      "validUntilLedger": 5231761,
+      "signers": [],
+      "observedFns": [
+        "transfer"
+      ],
+      "policies": [
+        {
+          "policy": "stock:spending_limit",
+          "address": null,
+          "installParams": {
+            "spending_limit": "11000000",
+            "period_ledgers": 17280
+          },
+          "paramsSource": "OpenZeppelin/stellar-contracts@v0.7.2 packages/accounts/src/policies/spending_limit.rs:88-94 — SpendingLimitAccountParams { spending_limit: i128, period_ledgers: u32 }; install guards :367-405 (CallContract-only, positive params, AlreadyInstalled)",
+          "derivedFrom": {
+            "asset": {
+              "contractId": "CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3",
+              "symbol": "CCQWXNKSWWTD247KFW5E7NMGJOMZ6ZED37ZOIU7Z2VMZGOD3S2M5PCW3",
+              "decimals": 7,
+              "resolved": false
+            },
+            "observedGrossOut": "10000000",
+            "spendWindowSecs": 86400
+          }
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "spend windows are measured in LEDGERS on-chain: 86400s → 17280 ledgers at an estimated 5s/ledger (spending_limit.rs:88-94; OZ's own DAY_IN_LEDGERS = 17280 = 86400s at this rate).",
+    "spending_limit is asset-blind: it meters whatever transfer amounts pass through its rule, so the metered token is the rule's CallContract target (one instance per token rule).",
+    "valid_until is a LEDGER SEQUENCE, not a Unix time (storage.rs:282; RECONCILIATION row 15): emitted 5231761 = recording ledger 4713361 + 518400 ledgers (2592000s at 5s/ledger). Recompute from the live ledger head at install — the recording ledger is in the past.",
+    "context rules cannot carry function names (matching is contract-level — storage.rs:289-304; RECONCILIATION rows 13-14): observedFns is advisory. Function-level narrowing must live in a policy's enforce; that codegen is Tranche 2 (docs/T2-NOTES.md).",
+    "emitted rules carry no signers: attach the smart account's signer(s) at install. add_context_rule requires at least one signer or policy per rule (mod.rs:20-21), and stock spending_limit::enforce rejects when no signers authenticated (spending_limit.rs:232-234)."
+  ],
+  "config": {
+    "lifetimeSecs": 2592000,
+    "spendWindowSecs": 86400,
+    "capMultiplier": 1.1,
+    "frequencyWindowSecs": 86400,
+    "frequencyMaxCalls": 5,
+    "constrainArguments": false
+  }
+}

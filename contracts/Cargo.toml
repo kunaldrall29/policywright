@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["frequency-limit-policy"]
+members = ["frequency-limit-policy", "oz-smart-account", "spending-limit-policy"]
 
 [workspace.package]
 edition = "2021"

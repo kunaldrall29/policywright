@@ -1,0 +1,31 @@
+---
+title: Why least-privilege for agents
+description: Safety framing — agents draft; humans sign; dry-run before install.
+---
+
+import StatusBadge from '../../../components/StatusBadge.astro';
+
+<StatusBadge
+  status="shipped"
+  proofHref="https://github.com/kunal-drall/policywright/blob/main/test/synthesizer.test.ts"
+  proofLabel="synthesizer tests"
+/>
+
+Agents that can move funds need **narrow, reviewable authorization** — not
+blanket keys. Policywright’s framing:
+
+1. **Derive from what the user already did.** Scope is exact `(contract, fn)`
+   pairs from a recording — see [Least-privilege model](/concepts/least-privilege/).
+2. **Compose stock policies first.** Prefer audited OZ building blocks over
+   fresh codegen — [compose-first](/concepts/compose-first/).
+3. **Dry-run the deny cases** before anyone signs — including unobserved swap
+   routes ([argument scope](/guides/argument-scope/)).
+4. **Agents never install.** MCP has four tools and **no install tool**; a
+   human signs via Freighter (preferred) or a labeled local-signer fallback —
+   [install guide](/guides/smart-account-install/).
+5. **Generated Rust stays stamped unaudited** until the T3 Audit Bank audit —
+   [Security](/security/).
+
+This page claims no new on-chain state beyond the proofs already cited on the
+[agent yield](/use-cases/agent-yield-operations/) walkthrough and
+[Roadmap](/roadmap/).

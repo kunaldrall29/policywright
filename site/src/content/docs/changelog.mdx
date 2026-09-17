@@ -1,20 +1,44 @@
 ---
 title: Changelog
-description: Project history, seeded from the repository's git log.
+description: Project history regenerated from the repository git log.
 ---
 
 import StatusBadge from '../../components/StatusBadge.astro';
 
-<StatusBadge status="shipped" />
+<StatusBadge
+  status="shipped"
+  proofHref="https://github.com/kunal-drall/policywright/commits"
+  proofLabel="git history"
+/>
 
-Seeded from the repository's
-[commit history](https://github.com/kunal-drall/policywright/commits/main),
-which is authoritative. The project is pre-release: version `0.1.0` in
-[package.json](https://github.com/kunal-drall/policywright/blob/main/package.json),
+Seeded from the repository
+[commit history](https://github.com/kunal-drall/policywright/commits). Pre-release
+`0.1.0` in
+[package.json](https://github.com/kunal-drall/policywright/blob/main/package.json);
 no tagged releases yet.
 
-## 2026-08-03 — Tranche 1 deliverables D1.1–D1.3
+## 2026-09-16 — Tranche 2 (MCP, skill, install)
 
+- [`c2fac64`](https://github.com/kunal-drall/policywright/commit/c2fac64) docs(d2.5): record testnet smart account install and live verify
+- [`f4071c2`](https://github.com/kunal-drall/policywright/commit/f4071c2) feat(install): submit add_context_rule via OZ Delegated AuthPayload
+- [`9cd4b09`](https://github.com/kunal-drall/policywright/commit/9cd4b09) feat(d2.5): account:create, install, and live verify fetch
+- [`f66717d`](https://github.com/kunal-drall/policywright/commit/f66717d) feat(contracts): add oz-smart-account and spending-limit-policy wrappers
+- [`20bffa8`](https://github.com/kunal-drall/policywright/commit/20bffa8) fix(mcp): lint cleanups and stdio tests use saved RecordedTx
+- [`595330f`](https://github.com/kunal-drall/policywright/commit/595330f) docs(mcp): server, determinism map, reference session, and Claude skill
+- [`4173c02`](https://github.com/kunal-drall/policywright/commit/4173c02) feat(mcp): stdio server with four tools wrapping shared pipeline
+- [`6873f04`](https://github.com/kunal-drall/policywright/commit/6873f04) feat(verify): shared on-chain context-rule diff library and pipeline
+- [`15c0a49`](https://github.com/kunal-drall/policywright/commit/15c0a49) feat(d2.4): close compose+generate with dual harness and boundary tests
+- [`2916801`](https://github.com/kunal-drall/policywright/commit/2916801) feat(simulate): close D2.3 with dual live argument-scope reports
+- [`cb4c66a`](https://github.com/kunal-drall/policywright/commit/cb4c66a) docs: Phase 0 T2 state audit and ground-truth refresh
+
+## 2026-08-03 — Tranche 1 deliverables D1.1–D1.4
+
+- [`547a35a`](https://github.com/kunal-drall/policywright/commit/547a35a) docs: cite the D1.4 CI run and record cross-platform wasm reproducibility
+- [`6da5ed2`](https://github.com/kunal-drall/policywright/commit/6da5ed2) ci: assert the cross-platform reproducible wasm hash
+- [`99fc1b2`](https://github.com/kunal-drall/policywright/commit/99fc1b2) docs(evidence): record D1.4 — per-deliverable criteria, demo script, housekeeping
+- [`cafc179`](https://github.com/kunal-drall/policywright/commit/cafc179) docs: correct stale and unprovable claims; cite the SCF #44 submission
+- [`3e6a97c`](https://github.com/kunal-drall/policywright/commit/3e6a97c) chore: relicense from Apache-2.0 to MIT per the funded tranche plan
+- [`81d326f`](https://github.com/kunal-drall/policywright/commit/81d326f) ci: cache the Rust toolchain and build the contract wasm with pinned stellar-cli
 - [`334cfc1`](https://github.com/kunal-drall/policywright/commit/334cfc1) docs: cite the D1.3 CI run
 - [`b669d06`](https://github.com/kunal-drall/policywright/commit/b669d06) docs(evidence): D1.3 delivered — compiled, tested, hash-verified testnet deploy
 - [`bdb6e03`](https://github.com/kunal-drall/policywright/commit/bdb6e03) docs: record D1.3 toolchain/deploy facts, close reconciliation rows 5 and 7

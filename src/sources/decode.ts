@@ -465,6 +465,19 @@ export async function assembleRecording(
     return { asset, direction: t.direction, amount: t.amount };
   });
 
+  // Explicit --account that never appears as envelope source, transfer
+  // counterparty, call arg, or authorization-tree party is almost always a
+  // wrong subject. Fail closed (Phase 4 S6) — empty flows alone are not enough
+  // (a claimer may appear in args with zero token movement).
+  if (options.subject !== undefined && !subjectAppearsInSequence(ordered, options.subject)) {
+    throw badInput(
+      `--account ${options.subject} has no involvement in the given transaction(s) ` +
+        `(not a source account, transfer counterparty, call argument, or authorization party). ` +
+        `Pass the economic actor (often a C… smart account), or omit --account to attribute ` +
+        `movements to the first transaction's source account.`,
+    );
+  }
+
   return {
     hash: first.hash,
     network: options.network,
@@ -485,6 +498,69 @@ export async function assembleRecording(
  */
 export function fallbackToken(contractId: string): TokenRef {
   return { contractId, symbol: contractId, decimals: 7, resolved: false };
+}
+
+/** True when a decoded call arg mentions `subject` (string or nested array). */
+function argMentionsSubject(arg: unknown, subject: string): boolean {
+  if (typeof arg === 'string') {
+    return arg === subject;
+  }
+  if (Array.isArray(arg)) {
+    return arg.some((item) => argMentionsSubject(item, subject));
+  }
+  return false;
+}
+
+/** Walk an authorization / invocation tree for any mention of `subject`. */
+function nodeMentionsSubject(
+  node: { contract: string; args: readonly unknown[]; subInvocations: readonly unknown[] },
+  subject: string,
+): boolean {
+  if (node.contract === subject) {
+    return true;
+  }
+  if (node.args.some((arg) => argMentionsSubject(arg, subject))) {
+    return true;
+  }
+  return node.subInvocations.some((sub) =>
+    nodeMentionsSubject(
+      sub as {
+        contract: string;
+        args: readonly unknown[];
+        subInvocations: readonly unknown[];
+      },
+      subject,
+    ),
+  );
+}
+
+/**
+ * True when `subject` appears as envelope source, transfer counterparty, top
+ * level call party, or anywhere in an authorization tree.
+ */
+export function subjectAppearsInSequence(decoded: readonly DecodedTx[], subject: string): boolean {
+  for (const tx of decoded) {
+    if (tx.sourceAccount === subject) {
+      return true;
+    }
+    for (const movement of tx.movements) {
+      if (movement.from === subject || movement.to === subject) {
+        return true;
+      }
+    }
+    for (const call of tx.invocations) {
+      if (call.contract === subject) {
+        return true;
+      }
+      if (call.args.some((arg) => argMentionsSubject(arg, subject))) {
+        return true;
+      }
+      if (call.authorizations.some((node) => nodeMentionsSubject(node, subject))) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**

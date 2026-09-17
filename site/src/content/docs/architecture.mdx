@@ -1,158 +1,115 @@
 ---
 title: Architecture
-description: The v0 pipeline in depth — recording, synthesis, emission, and simulation.
+description: Pipeline, agent layer (MCP + skill), and testnet install signing flow.
 ---
 
 import StatusBadge from '../../components/StatusBadge.astro';
 import Mermaid from '../../components/Mermaid.astro';
+import UnauditedBanner from '../../components/UnauditedBanner.astro';
 
-<StatusBadge status="shipped" />
+<StatusBadge
+  status="shipped"
+  proofHref="https://github.com/kunal-drall/policywright/blob/main/docs/architecture.md"
+  proofLabel="docs/architecture.md"
+/>
 
-:::note
-This page is the repository's
-[docs/architecture.md](https://github.com/kunal-drall/policywright/blob/main/docs/architecture.md),
-ported verbatim. Formatting changes only: the ASCII pipeline diagram is rendered
-as a Mermaid flowchart with the same nodes and edges, relative source links
-point at GitHub, and the plain-text README mention is linked to the
-corresponding README section.
-:::
-
-policywright is a small, single-direction pipeline. Each stage is a pure-ish function over
-the types in [`src/types.ts`](https://github.com/kunal-drall/policywright/blob/main/src/types.ts),
-which is the single source of truth for every shape in the system.
+policywright is a single-direction pipeline over the types in
+[`src/types.ts`](https://github.com/kunal-drall/policywright/blob/main/src/types.ts),
+plus a shipped agent layer (stdio MCP + Claude skill) and a separate
+human-signed testnet install path. Full prose:
+[docs/architecture.md](https://github.com/kunal-drall/policywright/blob/main/docs/architecture.md).
 
 <Mermaid
-  code={`flowchart LR
-  txhash(["tx hash"]) --> rpc["sources/rpc"]
-  fixtures(["fixtures/"]) --> fixture["sources/fixture"]
-  rpc --> recorded["RecordedTx"]
-  fixture --> recorded
+  code={`flowchart TB
+  subgraph sources [Recording]
+    txhash(["tx hash / simulation"]) --> rpc["sources/rpc"]
+    fixtures(["fixtures/"]) --> fixture["sources/fixture"]
+    rpc --> recorded["RecordedTx"]
+    fixture --> recorded
+  end
   recorded --> synthesizer["synthesizer"]
   synthesizer --> spec["SmartAccountSpec"]
   spec --> emitter["emitter"]
-  emitter --> specjson["spec.json"]
-  emitter --> contextrule["context-rule.json"]
-  emitter --> summary["summary.txt"]
-  emitter --> rust["FrequencyLimitPolicy.rs"]
+  emitter --> artefacts["spec.json / context-rule.json / summary / Rust"]
   spec --> simulate["simulate"]
-  simulate --> report["dry-run report"]`}
+  simulate --> report["dry-run report"]
+  artefacts --> verify["verify"]
+  verify --> diff["on-chain / fixture diff"]
+  subgraph agents [Agent layer — shipped]
+    skill["Claude skill"] --> mcp["MCP stdio"]
+    mcp --> tools["record · synthesize · simulate · verify"]
+  end
+  tools --> recorded
+  tools --> synthesizer
+  tools --> simulate
+  tools --> verify
+  subgraph installPath [Install — testnet only · not an MCP tool]
+    cr["context-rule.json"] --> cliInstall["CLI install"]
+    cliInstall --> freighter["Freighter preferred"]
+    cliInstall --> localSigner["local-signer fallback · labeled"]
+    freighter --> sa["OZ smart account"]
+    localSigner --> sa
+  end
+  artefacts --> cr`}
 />
 
 ## Stages
 
 ### 1. Recording (`src/sources/`)
 
-Produces a `RecordedTx`: the transaction hash/network, the ordered `ScopedCall`s
-(`contract`, `fnName`, decoded `args`), and the `AssetFlow`s (token, direction, amount).
+Produces a `RecordedTx`: hash/network, ordered `ScopedCall`s, and `AssetFlow`s.
 
-- **`fixture.ts`** loads `fixtures/recorded-tx.json`, a deterministic, offline Blend-claim
-  → Soroswap-swap recording. It validates the document defensively and reconstructs
-  `bigint` amounts (the JSON stores them as decimal strings, since JSON has no bigint).
-  This source drives the demo and the test suite with no network dependency.
-- **`rpc.ts`** is the optional live adapter. It fetches one or more transactions from a
-  Soroban RPC node by hash and merges them — in ledger-close-time order, each call tagged
-  with its `sourceHash` — into a single `RecordedTx` (via the shared decoders in
-  `decode.ts`).
-- **`simulation.ts`** ingests a saved `simulateTransaction` exchange
-  (`record --from-simulation <file>`) into a `RecordedTx` with `source: "simulation"` —
-  simulation discovers the authorization tree an unsigned envelope does not carry.
-- **`recorded.ts`** re-loads a previously saved recording (`synth --input <file>`).
+- **`fixture.ts`** — offline Blend→Soroswap fixture for demo/CI.
+- **`rpc.ts`** — live `getTransaction` by hash(es), SEP-41 events, SAC metadata.
+- **`simulation.ts`** — saved `simulateTransaction` exchange.
+- **`recorded.ts`** — reload a saved recording.
 
-  Decoding assumptions (Soroban protocol 27 / CAP-67, `@stellar/stellar-sdk` 15.1.0 —
-  every shape verified against the committed captures,
-  [FACTS.md §3](https://github.com/kunal-drall/policywright/blob/main/docs/FACTS.md)):
-  - the transaction is a v1 (or fee-bump-wrapping-v1) envelope;
-  - contract calls come from `InvokeHostFunction` operations whose host function is
-    `InvokeContract` (`InvokeContractArgs` → contract, function, args via `scValToNative`);
-  - token movements come from CAP-67/SEP-41 token events — `transfer`, SAC
-    `mint`/`burn`/`clawback` — in both coexisting topic shapes (SAC events carry a 4th
-    SEP-0011 asset-string topic; plain SEP-41 tokens emit 3 topics) with `i128` or
-    CAP-67 muxed-map `data`, attributed to the subject account when it is the `from`
-    (out) or `to` (in);
-  - the subject account is passed explicitly (`--account <G…|C…>`) — the economic actor
-    of a smart-account flow is often a `C…` contract address, not the envelope source;
-    without it the first transaction's source account is assumed and a warning records
-    the assumption;
-  - each token's symbol/decimals are resolved by simulating its SEP-41 `symbol()` /
-    `decimals()` getters against the same node, cached per token. A token that is not a
-    standard SAC/SEP-41 token (or a node that rejects the simulation) falls back to the
-    full contract id with `resolved: false` — never a silent guess.
-
-  Failure modes (not found, failed on-chain, wrong network, no contract calls, malformed
-  envelope) return a typed `RecorderError` — `BAD_INPUT` / `TX_NOT_FOUND` / `NETWORK` /
-  `DECODE_FAILED`
-  ([src/sources/errors.ts](https://github.com/kunal-drall/policywright/blob/main/src/sources/errors.ts))
-  — rather than a silent empty result.
+Typed failures: `BAD_INPUT` / `TX_NOT_FOUND` / `NETWORK` / `DECODE_FAILED`
+([src/sources/errors.ts](https://github.com/kunal-drall/policywright/blob/main/src/sources/errors.ts)).
 
 ### 2. Synthesis (`src/synthesizer.ts`)
 
-`synthesize(tx, config, now) → SmartAccountSpec`. The design mirrors OZ's smart-account
-model: a **context rule** fixes scope, and a small set of **policies** bound to it enforce
-quantitative limits.
-
-- **Scope** — the distinct `(contract, fn)` pairs observed, in first-seen order, plus a
-  short derived rule name (OZ caps rule names at 20 **bytes** — multibyte symbols count
-  per byte).
-- **Spending limits** — per asset, sum the **gross outflow** (ignoring inflows) and cap it
-  at `gross × capMultiplier` (rounded up so the cap never sits below what was observed).
-  - _Gross, not net:_ an asset received then sent within the same flow (BLND: claimed in,
-    swapped out) nets to ~zero, but the account still moved the gross amount out, so that
-    is what is capped.
-  - _Inflow-only assets get no cap_ — the USDC received from the swap moves nothing out, so
-    no spending policy is emitted for it. This is the minimal-permission case.
-- **Frequency** — one frequency-limit policy is always emitted from config.
-- **Argument scope** — the set of token addresses a swap `path` touched is always recorded
-  on the spec as `argumentScopes`. When `config.constrainArguments` is enabled it is also
-  added to `policies` (and thus enforced as a denial); otherwise it is advisory and the
-  simulator only flags violations. It constrains the token _set_, not ordering/hops/amounts
-  (see the [README](https://github.com/kunal-drall/policywright#argument-level-scope---constrain-arguments)
-  for limits).
-- **Policy budget** — OZ allows at most `MAX_POLICIES` (5) policies per context rule;
-  exceeding that adds a warning to the spec rather than failing.
-
-`SynthConfig` is validated up front and echoed into the spec for reproducibility. All of
-the above knobs are exposed as CLI flags on `synth`/`simulate`.
+Exact `(contract, fn)` scope, gross-outflow spend caps, inflow-only assets get
+no cap, always-on frequency limit, config-gated argument scope. Compose stock
+OZ `spending_limit` when a direct transfer was authorized; generate
+`FrequencyLimitPolicy` only when no stock policy fits — see
+[compose-first](/concepts/compose-first/).
 
 ### 3. Emission (`src/emitter.ts`, `src/rust-policy.ts`)
 
-Renders the spec four ways:
+`spec.json`, `context-rule.json`, `summary.txt`, and stamped
+`FrequencyLimitPolicy.rs` (byte-locked to
+`contracts/frequency-limit-policy` at default config).
 
-- **`spec.json`** — bigint-safe JSON (amounts as decimal strings).
-- **`context-rule.json`** — installable OZ context rules + policy install params.
-- **`summary.txt`** — a human-readable rundown of the observed flow, the context rule, the
-  policies (with amounts formatted by token decimals), and any warnings.
-- **`FrequencyLimitPolicy.rs`** — the custom policy in Rust, implementing OZ's real
-  `Policy` trait (associated `AccountParams`; `install` / `enforce` / `uninstall`;
-  `enforce` rejects by panicking — there is no `can_enforce` hook). At the default
-  config the emitted source is byte-identical to the compiled-and-tested crate at
-  `contracts/frequency-limit-policy` (equality locked by `test/rust-policy.test.ts`;
-  non-default `--frequency-window`/`--frequency-max` values are substituted into the
-  template). Every generated Rust file is stamped
-  **ILLUSTRATIVE / UNAUDITED — NOT DEPLOY-READY**; the summary carries the same note.
+<UnauditedBanner />
 
 ### 4. Simulation (`src/simulate.ts`)
 
-`simulateCall(spec, candidate) → SimulationResult`. Checks run in a fixed order; the first
-failure decides the outcome:
+Fixed-order checks: scope → lifetime → argument (enforced or advisory) →
+spend → frequency. See [Dry-run & argument scope](/guides/argument-scope/).
 
-1. **scope** — is the `(contract, fn)` pair authorised? (deny: unseen function)
-2. **lifetime** — is the call within the rule's validity window? (deny: expired)
-3. **argument-constraint** (enforced) — does the swap route through an unobserved token?
-   (deny — only when `constrainArguments` is enabled)
-4. **spending-limit** — does any outflow exceed its asset's cap? (deny: over-cap)
-5. **frequency-limit** — would this call exceed the rolling call cap? (deny: too frequent)
-6. **argument-constraint** (advisory) — when not enforced, an unobserved route is **flagged**
-   rather than permitted silently.
+### 5. Verify (`src/verify/`)
 
-If every check passes the call is permitted. `buildScenarios` derives the standard
-permit/deny/flag set generically from a spec, and `renderReport` formats results as
-Markdown.
+Structural diff of emitted context rules vs on-chain snapshot or live
+`get_context_rule` fetch — **not** the offline demo self-check.
+
+### 6. Agent layer (shipped)
+
+stdio MCP with **exactly four tools** — no install tool —
+[MCP tools](/reference/mcp-tools/). Claude skill loads from
+`skills/policywright/` — [Claude skill](/reference/claude-skill/).
+
+### 7. Install (CLI only, testnet)
+
+[`docs/smart-account-install.md`](https://github.com/kunal-drall/policywright/blob/main/docs/smart-account-install.md):
+`account:create` → `install` → live `verify`. Signing hierarchy:
+
+1. **Preferred:** Freighter via `stellar-wallets-kit` `signAuthEntry`.
+2. **Fallback (labeled):** local ed25519 from `.env` — CLI prints
+   `signing: local-signer-fallback` and never claims Freighter signed.
 
 ## Design choices
 
-- **`bigint` everywhere for token amounts** — no float rounding in money math; formatting
-  to human decimals happens only at the edges (`emitter.formatAmount`).
-- **Explicit `now`** — synthesis takes the current time as a parameter rather than reading
-  the clock, keeping it deterministic and testable.
-- **Offline-first** — the fixture is the default source; the live RPC adapter is opt-in, so
-  the demo, tests, and CI never depend on network state or RPC retention windows.
+- **`bigint` for amounts**; explicit `now` for deterministic synthesis.
+- **Offline-first** fixtures for CI; live RPC opt-in.
+- **Agents never install** — human-signed CLI/wallet only.

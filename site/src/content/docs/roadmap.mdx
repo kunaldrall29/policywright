@@ -1,58 +1,63 @@
 ---
 title: Roadmap
-description: The three-tranche build plan — MVP, testnet expansion, mainnet launch — and where v0 stands.
+description: Three-tranche plan — T1 delivered, T2 status with proof, T3 Planned.
 ---
 
 import StatusBadge from '../../components/StatusBadge.astro';
 
-<StatusBadge status="in-development" />
+<StatusBadge
+  status="shipped"
+  proofHref="https://github.com/kunal-drall/policywright/blob/main/docs/site-delta.md"
+  proofLabel="site-delta map"
+/>
 
-Policywright is built against a three-tranche plan: **MVP → Testnet →
-Mainnet**. All dates are **targets**. Deliverables that involve on-chain
-behaviour will be evidenced by contract IDs and transaction links when they
-exist; the first — the deployed generated frequency-limit policy — is evidenced
-in the deployment log in
-[evidence/EVIDENCE.md](https://github.com/kunal-drall/policywright/blob/main/evidence/EVIDENCE.md).
+Built in response to the SCF 'OZ accounts policy builder' RFP (Q2 2026), funded
+in round SCF #44 as the awarded submission 'Record-to-Policy MCP + Agent
+skill.' All dates below are **targets**. Shipped claims link proof in-repo or
+on-chain; human session videos are **[BLOCKER]** until Phase 5 evidence.
 
 ## The three tranches
 
-| Tranche                  | Target date                | Focus              | Headline deliverables                                                                                                                                                                                       |
-| ------------------------ | -------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **T1 — MVP (testnet)**   | 31 Aug 2026 _(target)_     | Working engine     | Recording layer (live + simulated); least-privilege synthesizer (scope + composed policies + minimal permission); generated-policy compile + testnet deploy; open-source CLI + CI                             |
-| **T2 — Testnet expansion** | 15 Oct 2026 _(target)_   | Agent-usable tooling | MCP server (`record` / `synthesize` / `simulate` / `verify` tools); Claude skill; dry-run harness + argument-level scope; net-new policy codegen with storage segregation; wallet integration (testnet, end-to-end) |
-| **T3 — Mainnet launch**  | 30 Nov 2026 _(target)_     | Production         | Three documented end-to-end walkthroughs; OpenZeppelin validation of generated code; production release (versioned MCP server + packaged skill + docs); mainnet demonstration; test suite + audit readiness (audit scope submitted to the SCF Audit Bank) |
+| Tranche | Target | Focus | Status |
+| ------- | ------ | ----- | ------ |
+| **T1 — MVP (testnet)** | 31 Aug 2026 _(delivered early)_ | Working engine | **Delivered + approved** — see below |
+| **T2 — Testnet expansion** | 15 Oct 2026 _(target)_ | Agent-usable tooling | **In progress / largely shipped** — per-row proof |
+| **T3 — Mainnet launch** | 30 Nov 2026 _(target)_ | Production | **Planned** only — Audit Bank audit listed; no T3 work claimed |
 
-## Where v0 stands
+## T1 — delivered early + approved
 
-Parts of the T1 and T2 scope already exist in the repository. Each item below
-is verifiable today:
+| Deliverable | Proof |
+| ----------- | ----- |
+| Recording (fixture + live RPC + simulation) | [`src/sources/`](https://github.com/kunal-drall/policywright/tree/main/src/sources), [`examples/live/`](https://github.com/kunal-drall/policywright/tree/main/examples/live) |
+| Least-privilege synthesizer + installable OZ context rules | [`src/synthesizer.ts`](https://github.com/kunal-drall/policywright/blob/main/src/synthesizer.ts), [`docs/context-rule-schema.md`](https://github.com/kunal-drall/policywright/blob/main/docs/context-rule-schema.md) |
+| Generated policy compile + hash-verified testnet deploy | [`CDSVPSTS…`](https://stellar.expert/explorer/testnet/contract/CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP), [EVIDENCE.md](https://github.com/kunal-drall/policywright/blob/main/evidence/EVIDENCE.md) |
+| Open-source CLI + CI | [`src/cli.ts`](https://github.com/kunal-drall/policywright/blob/main/src/cli.ts), [CI workflow](https://github.com/kunal-drall/policywright/actions/workflows/ci.yml) |
 
-- Recording from the offline fixture and from a live Soroban RPC node by
-  transaction hash —
-  [src/sources/](https://github.com/kunal-drall/policywright/tree/main/src/sources)
-- The least-privilege synthesizer: exact scope binding, gross-outflow spend
-  caps, the minimal-permission inflow rule, and frequency limits —
-  [src/synthesizer.ts](https://github.com/kunal-drall/policywright/blob/main/src/synthesizer.ts)
-- The emitter: `spec.json`, `context-rule.json`, `summary.txt`, and the stamped
-  illustrative Rust policy — the same source as the compiled-and-tested crate at
-  [contracts/frequency-limit-policy](https://github.com/kunal-drall/policywright/tree/main/contracts/frequency-limit-policy) —
-  [src/emitter.ts](https://github.com/kunal-drall/policywright/blob/main/src/emitter.ts)
-- The dry-run harness with auto-generated deny cases and config-gated
-  argument-level scope —
-  [src/simulate.ts](https://github.com/kunal-drall/policywright/blob/main/src/simulate.ts)
-- The open-source CLI, Vitest suite with coverage thresholds, and CI running
-  lint → format → typecheck → test → demo —
-  [src/cli.ts](https://github.com/kunal-drall/policywright/blob/main/src/cli.ts),
-  [CI workflow](https://github.com/kunal-drall/policywright/actions/workflows/ci.yml)
+## T2 — per deliverable
 
-The remaining items are planned and have not been started in this repository:
-the MCP server, the Claude skill, net-new policy codegen with storage
-segregation, wallet integration, the walkthroughs, the OpenZeppelin validation
-pass, the mainnet demonstration, and the Audit Bank submission. (The simulated-transaction recording path shipped with D1.1; the
-generated policy compiles, tests, and deploys to testnet since D1.3.)
+| Deliverable | Status | Proof |
+| ----------- | ------ | ----- |
+| MCP server (`record` / `synthesize` / `simulate` / `verify`) | **Shipped** (local stdio) | [`docs/mcp-server.md`](https://github.com/kunal-drall/policywright/blob/main/docs/mcp-server.md), [`test/mcp-stdio.test.ts`](https://github.com/kunal-drall/policywright/blob/main/test/mcp-stdio.test.ts). **[BLOCKER]** human reference session recording |
+| Claude skill | **Shipped** (packaged) | [`skills/policywright/SKILL.md`](https://github.com/kunal-drall/policywright/blob/main/skills/policywright/SKILL.md), [`docs/skill-demo-script.md`](https://github.com/kunal-drall/policywright/blob/main/docs/skill-demo-script.md). **[BLOCKER]** human demo recording |
+| Dry-run harness + argument-level scope | **Shipped** | [`docs/argument-scope.md`](https://github.com/kunal-drall/policywright/blob/main/docs/argument-scope.md), [`simulation-report-args-off.md`](https://github.com/kunal-drall/policywright/blob/main/examples/live/simulation-report-args-off.md) / [`args-on.md`](https://github.com/kunal-drall/policywright/blob/main/examples/live/simulation-report-args-on.md) |
+| Compose + net-new codegen (storage segregation) | **Shipped** | [`docs/compose-vs-generate.md`](https://github.com/kunal-drall/policywright/blob/main/docs/compose-vs-generate.md), [`simulation-report-compose-and-generate.md`](https://github.com/kunal-drall/policywright/blob/main/examples/live/simulation-report-compose-and-generate.md) |
+| Wallet / smart-account install (testnet) | **Shipped (testnet)** | [`docs/smart-account-install.md`](https://github.com/kunal-drall/policywright/blob/main/docs/smart-account-install.md), SA [`CAXBVHXP…`](https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT), [EVIDENCE D2.5](https://github.com/kunal-drall/policywright/blob/main/evidence/EVIDENCE.md) |
+
+## T3 — Planned (target 30 Nov 2026)
+
+Listed only — **not started** in this repository:
+
+- Three documented end-to-end walkthroughs (production packaging)
+- OpenZeppelin validation of generated code
+- Versioned MCP + packaged skill + docs release
+- Mainnet demonstration
+- Test suite + **audit scope submitted to the SCF Audit Bank**
+
+Until the Audit Bank audit, generated contracts remain illustrative /
+unaudited and **testnet-only**.
 
 ## Proof policy
 
-Shipped claims on this site link to the repository, CI, or committed artefacts.
-When tranche deliverables land on-chain, this page will link contract IDs and
-transaction explorers as proof, in the same spirit.
+Shipped claims on this site link to the repository, CI, committed artefacts, or
+explorer contract/tx IDs. Missing human session recordings are marked
+**[BLOCKER]**, not invented.

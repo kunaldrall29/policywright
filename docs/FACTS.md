@@ -462,7 +462,7 @@ Decoded from the captures — both transfer-event shapes **coexist**:
 
 So the historical 3-topic assumption is wrong **for SAC events** (they carry
 the SEP-0011 asset string as a 4th topic, per CAP-67) but still right for
-plain SEP-41 tokens. A robust decoder must accept both and must not treat
+plain SEP-41 tokens. A decoder must accept both and must not treat
 `topics[3]` as guaranteed.
 
 Additionally per CAP-67 (verified in
@@ -698,6 +698,26 @@ evidence trail cites the fully-verified `CDSVPSTS…` instance.
 fetch --id CDSVPSTS… --network testnet` + `shasum -a 256` again produced
 `42227f2b6150c95a7084bb7c5ff2e7a40793eae39bf0c5dc95bd752d18ee6eed`.
 
+### D2.5 deployments (2026-09-16, source: this agent run / `npm run cli`)
+
+| Artifact                                               | ID / hash                                                             | Notes                                                                                                                                                                                                                    |
+| ------------------------------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Spending-limit policy wrapper                          | `CC4KFQ7SIFVW45FDZ6NSKB4NETCE25CDLXIWK2GTQRT52KZUQESVTFTM`            | wasm `a26a885dff54ca5331a516fbb0ee051acfac56ecd7a6f7b014d473a2303265f8`; deploy tx `b1770755c136c504c536d8d129c8504aec3c9ec03a29275d0341d0f488d5c872`                                                                    |
+| OZ smart account (Delegated G)                         | `CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT`            | wasm `413b22531042f9b2588c5cb211c1df2845615fc42a2bcee61190392318b7c578`; deploy tx `8beb1d4cb94b40a318326c0b056509177ff7c4de33caf7ac28c2ed01c652ac32`; signer `GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY` |
+| Install `pw:swap` (+ FrequencyLimitPolicy `CDSVPSTS…`) | tx `5907ecbf76be7738fc1468dbfb4023a4833fe63a011dbe73b85268ce9b6fe8da` | local-signer OZ AuthPayload path                                                                                                                                                                                         |
+| Install `pw:harvest` (+ FrequencyLimitPolicy)          | tx `589faaad0a4ff19fed88b5fe9714f21d930b4b541b9b24469d34868bb54b30aa` |                                                                                                                                                                                                                          |
+| Install `pw:xfer:native` (+ spending-limit wrapper)    | tx `36791fe400463f32654ed8b003c7d7c776e5fe9775bc3631ff835e1a41a44654` |                                                                                                                                                                                                                          |
+| Live verify                                            | green — 3 CallContract rules match                                    | `npm run cli -- verify --smart-account CAXBVHXP… --context-rule examples/live/context-rule.json`                                                                                                                         |
+
+Demo OZ account still live for read probes: `CALCGK5RRRVOV5XUGRUPX3NT5XZF3XUDL3SHM7ZXZEPNFMLFGJNCTV5W`.
+
+**Install auth note (2026-09-16):** `stellar contract invoke --send=yes` alone
+fails with `Missing signing key for account C…` because OZ Delegated signers
+need an `AuthPayload` + nested G `__check_auth(auth_digest)` entry. The CLI
+`install` path builds that payload locally (FACTS §5.3 local-signer fallback)
+after `--send=no` simulation. Preferred Freighter `signAuthEntry` remains the
+interactive path when a browser wallet is available.
+
 ---
 
 ## 6. The funded SCF submission — public facts
@@ -722,10 +742,112 @@ the tranche plan as recorded in this repository.
 
 ---
 
+## GATE 5 — Tranche 2 agent / wallet surface (verified 2026-09-16)
+
+### 5.1 MCP SDK + stdio registration
+
+| Fact                                     | Value                                                                                            | Verified by                                                        | Date       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ | ---------- |
+| `@modelcontextprotocol/sdk` latest (npm) | `1.30.0` (published 2026-07-27)                                                                  | `npm view @modelcontextprotocol/sdk version`                       | 2026-09-16 |
+| Claude Desktop local registration        | `mcpServers.<name> = { command, args }` in `claude_desktop_config.json` (stdio; no `type` field) | https://modelcontextprotocol.io/docs/develop/connect-local-servers | 2026-09-16 |
+| Claude Code local registration           | Same `mcpServers` shape; also `claude mcp add --transport stdio …` and project `.mcp.json`       | https://code.claude.com/docs/en/mcp                                | 2026-09-16 |
+
+policywright registration (once the server ships):
+
+```json
+{
+  "mcpServers": {
+    "policywright": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp/server.ts"],
+      "cwd": "/absolute/path/to/policywright"
+    }
+  }
+}
+```
+
+Or after `npm run build`: `node dist/mcp/server.js`. The server speaks **stdio
+only**; it never signs and never requires a secret.
+
+### 5.2 Anthropic Agent Skills packaging
+
+| Fact                   | Value                                                                                                                     | Verified by                                                                                                       | Date       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| Canonical docs host    | Moved off `docs.anthropic.com` → `platform.claude.com` (+ agentskills.io open standard). Old Claude Code skills URL 404s. | `curl -sSIL` redirect chain to platform.claude.com                                                                | 2026-09-16 |
+| Required frontmatter   | YAML `name` + `description` in `SKILL.md`                                                                                 | https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview ; https://agentskills.io/specification | 2026-09-16 |
+| Directory layout       | `skill-name/SKILL.md` (+ optional `scripts/`, `references/`, `assets/`)                                                   | same                                                                                                              | 2026-09-16 |
+| Claude Code load paths | `~/.claude/skills/` (personal), `.claude/skills/` (project)                                                               | https://code.claude.com/docs/en/skills                                                                            | 2026-09-16 |
+| Official examples      | https://github.com/anthropics/skills (`skills/skill-creator/SKILL.md` frontmatter matches)                                | GitHub raw                                                                                                        | 2026-09-16 |
+
+### 5.3 stellar-wallets-kit auth-entry signing (Freighter path)
+
+| Fact                                     | Value                                                                 | Verified by                                                                                                                                                                 | Date       |
+| ---------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `@creit.tech/stellar-wallets-kit` latest | `2.6.0`                                                               | `npm view @creit.tech/stellar-wallets-kit version`                                                                                                                          | 2026-09-16 |
+| Freighter module `signAuthEntry`         | **Supported** — delegates to `@stellar/freighter-api` `signAuthEntry` | https://raw.githubusercontent.com/Creit-Tech/Stellar-Wallets-Kit/main/src/sdk/modules/freighter.module.ts ; https://stellarwalletskit.dev/wallets/create-wallet-module.html | 2026-09-16 |
+
+**Signing hierarchy for install (record this, do not invent alternatives):**
+
+1. **Preferred:** browser Freighter via stellar-wallets-kit `signAuthEntry`
+   (client-side; secret never leaves the wallet).
+2. **Fallback (labeled in CLI output):** local ed25519 signer from `.env`
+   (`STELLAR_SECRET_KEY`) when no browser wallet is available (headless /
+   CI-style testnet installs). Reason string must appear in the command
+   output. Never claim Freighter signed when the fallback ran.
+
+### 5.4 OZ account-side call shapes (re-check @ v0.7.2)
+
+Re-fetched 2026-09-16 from
+`OpenZeppelin/stellar-contracts` tag `v0.7.2`
+(`a9c42169000638da937577f592ebf61a7a3c94ca`). crates.io
+`stellar-accounts` max_stable remains **0.7.2**.
+
+- **Create / initialize:** example
+  `examples/multisig-smart-account` `__constructor(e, signers, policies)`
+  calls `smart_account::add_context_rule` with `ContextRuleType::Default`
+  at construction (policies map may be empty if signers alone satisfy the
+  ≥1 signer-or-policy rule).
+- **Attach rule:** `add_context_rule(context_type, name, valid_until,
+signers, policies: Map<Address, Val>)` —
+  `packages/accounts/src/smart_account/mod.rs:238-248`.
+- **Attach policy to existing rule:** `add_policy(context_rule_id, policy,
+install_param: Val)` — same module.
+- **Lifetime basis:** `valid_until: Option<u32>` is a **ledger sequence**
+  (unchanged from §2.2).
+
+### 5.5 Chain retention re-check (2026-09-16)
+
+Soroban testnet RPC `getHealth`: `latestLedger` ≈ 4711835, `oldestLedger` ≈
+4590876, `ledgerRetentionWindow` 120960 (~7 days).
+
+| Artifact                                                                   | RPC `getTransaction`   | Still verifiable how                                                  |
+| -------------------------------------------------------------------------- | ---------------------- | --------------------------------------------------------------------- |
+| Policy instance `CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP` | n/a (state)            | `getLedgerEntries` — instance + wasm hash `42227f2b…6eed` **present** |
+| Upload tx `5ac3320d…082e2c` / deploy tx `35ddaeaa…236af0`                  | `NOT_FOUND` (aged out) | Horizon + stellar.expert archival                                     |
+| Claim `acf256a0…` / swap `2dcff661…`                                       | `NOT_FOUND` (aged out) | Committed captures under `examples/live/`; explorer links             |
+
+Fresh same-day hashes are required for any live video / agent session that
+must `record` via RPC.
+
+### 5.6 Toolchain drift note (do not silently upgrade)
+
+| Fact                              | Value                  | Verified by                                      | Date       |
+| --------------------------------- | ---------------------- | ------------------------------------------------ | ---------- |
+| stellar-cli latest GitHub release | `v28.0.0` (2026-08-26) | `GET /repos/stellar/stellar-cli/releases/latest` | 2026-09-16 |
+| This repo's verified pin (T1)     | `v27.1.0`              | FACTS §1.1 / CI                                  | 2026-08-03 |
+
+Keep building/deploying with **27.1.0** until a deliberate re-verification
+pass updates the wasm reproducibility claim. Do not assume v28 is
+drop-in.
+
+---
+
 ## Changelog
 
 | Date       | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-16 | D2.5: oz-smart-account + spending-limit-policy crates; CLI `account:create` / `install` / live `verify --smart-account`; testnet smart account `CAXBVHXP…` with three installed generated rules (FrequencyLimitPolicy ×2 + spending_limit wrapper); Delegated AuthPayload local-signer path documented.                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 2026-09-16 | Gate 5 added (MCP SDK 1.30.0 + Claude Desktop/Code stdio registration; Agent Skills format moved to platform.claude.com/agentskills.io; stellar-wallets-kit 2.6.0 Freighter `signAuthEntry` supported; OZ v0.7.2 create/add_context_rule/add_policy re-check; RPC retention expiry for T1 tx hashes; policy contract still live; stellar-cli latest is v28.0.0 while repo pin stays 27.1.0). Phase 0 audit: [t2-state-audit.md](t2-state-audit.md), [RECONCILIATION-T2.md](RECONCILIATION-T2.md).                                                                                                                                                                                                                    |
 | 2026-08-03 | File created (toolchain, OZ trait/ContextRule/limits/stock policies, fixture audit). Restructured same day around the four pre-flight gates; added stellar-cli 26.0.0→27.1.0 upgrade, `--verifiable` finding, `wasm32v1-none`, live-chain captures (protocol 27 event shapes, fee-bump, Blend claim, Soroswap swap), swap-venue verification (Comet + Soroswap with on-chain liquidity), and version pins.                                                                                                                                                                                                                                                                                                           |
 | 2026-08-03 | D1.2 session: added §2.5 — `add_context_rule` install surface, one-`Context`-per-`require_auth` at `__check_auth` (nested transfers need their own rule; that is where `spending_limit` composes), no rule auto-discovery, ≥1 signer-or-policy per rule, `spending_limit` install guards (`OnlyCallContractAllowed`/`InvalidLimitOrPeriod`/`AlreadyInstalled`) and the non-empty-signers requirement in `enforce`. Verified against a fresh v0.7.2 clone (same commit `a9c4216…`).                                                                                                                                                                                                                                   |
 | 2026-08-03 | D1.1 session: pinned `@stellar/stellar-sdk` exact `15.1.0`; verified `createdAt` is a JSON string the SDK passes through untyped-correctly; verified SDK parses the protocol-27 `events` field; recorded the complete CAP-67 unified SAC event schemas (mint has NO admin topic; sep0011 string is never a strkey); captured and documented the raw `simulateTransaction` result shape (§3.6, committed fixture); retention re-check for the two flow hashes (still live, ≈4–6 h left).                                                                                                                                                                                                                              |

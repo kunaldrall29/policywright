@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Policywright T2 Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root { --bg:#0b1220; --fg:#e8eef7; --muted:#9db0c9; --accent:#3dd6c6; --card:#121a2b; --warn:#f0b429; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:radial-gradient(1200px 700px at 10% -10%, #16324a 0%, var(--bg) 55%);
+    color:var(--fg); font-family:"IBM Plex Sans", sans-serif; overflow:hidden; }
+  .brand { position:fixed; top:28px; left:56px; font-size:26px; font-weight:700; z-index:5; }
+  .brand span { color:var(--accent); }
+  .timer { position:fixed; top:32px; right:56px; color:var(--muted); font-variant-numeric:tabular-nums; z-index:5; }
+  .lower { position:fixed; left:56px; bottom:32px; padding:10px 16px; background:rgba(61,214,198,.12);
+    border:1px solid var(--accent); color:var(--accent); font-weight:600; letter-spacing:.05em;
+    text-transform:uppercase; font-size:13px; border-radius:6px; z-index:5; }
+  .stage { position:relative; width:100vw; height:100vh; padding:72px 56px 88px; }
+  .slide { display:none; height:100%; }
+  .slide.active { display:flex; flex-direction:column; gap:16px; animation:in .4s ease; }
+  @keyframes in { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+  h1 { font-size:44px; margin:12px 0 8px; line-height:1.12; max-width:18ch; }
+  h2 { font-size:30px; margin:8px 0; }
+  p.lead { color:var(--muted); font-size:20px; max-width:54ch; line-height:1.45; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; flex:1; min-height:0; }
+  .card { background:rgba(18,26,43,.92); border:1px solid #2a3b57; border-radius:12px; padding:16px; overflow:auto; }
+  .card h3 { margin:0 0 10px; font-size:12px; color:var(--accent); text-transform:uppercase; letter-spacing:.08em; }
+  pre { margin:0; white-space:pre-wrap; word-break:break-word; font-family:"IBM Plex Mono", monospace; font-size:12.5px; line-height:1.4; color:#d7e3f4; }
+  .links a { color:var(--accent); margin-right:20px; font-size:18px; text-decoration:none; }
+  .badge { display:inline-block; padding:5px 12px; border-radius:999px; background:#14352f; color:var(--accent); font-size:13px; }
+  .end h1 { max-width:none; font-size:34px; }
+</style>
+</head>
+<body>
+<div class="brand">policy<span>wright</span></div>
+<div class="timer" id="timer">0:00</div>
+<div class="lower" id="lower">D2 · Cold open</div>
+<div class="stage">
+
+<section class="slide active" data-lower="D2 · Cold open" data-sec="17">
+  <h1>Record-to-Policy MCP + Agent skill</h1>
+  <p class="lead">In Tranche 1 this worked from the command line — in Tranche 2, an agent can use it, a human still signs, and the chain enforces what was granted.</p>
+  <p class="links">
+    <a href="https://github.com/kunaldrall29/policywright">github.com/kunaldrall29/policywright</a>
+    <a href="https://policywright.lemmalabs.space">policywright.lemmalabs.space</a>
+  </p>
+  <p><span class="badge">SCF #44 · Shipped (testnet) · UNAUDITED</span></p>
+</section>
+
+<section class="slide" data-lower="D2.1 · MCP  ·  D2.2 · Claude skill" data-sec="31">
+  <h2>The agent asks</h2>
+  <div class="grid">
+    <div class="card"><h3>Skill conversation (recorded)</h3><pre># Skill demo conversation (dry-run, recorded 2026-09-17)
+
+Criterion conversation: “grant permission to do X from this transaction” → reviewed policy.
+This transcript drives the **same four MCP tools** the skill wraps. Cap clarification is explicit.
+
+## Turn 1 — User
+
+&gt; Here are two testnet hashes from a vault deposit then withdraw. Draft the tightest policy that lets a delegate repeat exactly this:
+&gt; `af094330a3f86a500679fc011a847c000e5a6018c83a73c429496f54ee532445`
+&gt; `2f0a27b953635f9de1762bcf6133d62d432ea66ef32439509aa4b14768f4facf`
+
+## Turn 2 — Skill: record
+
+Tool call: `record` with hashes (offline: loaded committed RecordedTx for those hashes).
+Observed subject + calls from tool output (no invented amounts).
+```
+{
+  &quot;subject&quot;: &quot;GCODZM35QUK7HD4JODIBMRTK7DOTF2AVNIPPYIYYPRJFJCNH6CMWVZAK&quot;,
+  &quot;calls&quot;: [
+    {
+      &quot;fn&quot;: &quot;deposit&quot;,
+      &quot;contract&quot;: &quot;CCJSSLAEVUEE&quot;
+    },
+    {
+      &quot;fn&quot;: &quot;withdraw&quot;,
+      &quot;contract&quot;: &quot;CCJSSLAEVUEE&quot;
+    }
+  ],
+  &quot;flows&quot;: 2
+}
+```
+
+## Turn 3 — Skill: synthesize (first pass)
+Tool call: `synthesize`.
+Plain-language draft (from summary):
+```
+policywright — synthesized smart-account authorization
+======================================================
+
+Source tx : af094330a3f86a500679fc011a847c000e5a6018c83a73c429496f54ee532445
+Network   : testnet (recorded from rpc)
+
+Observed flow
+-------------
+  call deposit @ CCJSSLAEVUEE2G5MEPGTN4C4RZKC3QMERU2VWUHET6DFQ6BPEYXW5MET
+  call withdraw @ CCJSSLAEVUEE2G5MEPGTN4C4RZKC3QMERU2VWUHET6DFQ6BPEYXW5MET
+  out  1 CDOEGWQSTV4FEY344WTANJKH7OWSOCIBOIAF2N5EHKS7RO33XMKX5TD7 (unresolved)
+  in   0.4 CDOEGWQSTV4FEY344WTANJKH7OWSOCIBOIAF2N5EHKS7RO33XMKX5TD7 (unresolved)
+
+Context rule
+------------
+  name        : pw:deposit+withdraw
+  valid until : 1792204387 (unix)
+  scope       :
+    - deposit @ CCJSSLAEVUEE2G5MEPGTN4C4RZKC3QMERU2VWUHET6DFQ6BPEYXW5MET
+    - withdraw @ CCJSSLAEVUEE2G5MEPGTN4C4RZKC3QMERU2VWUHET6DFQ6BPEYXW5MET
+
+Policies (2)
+--------
+  - spending-limit: CDOEGWQSTV4FEY344WTANJKH7OWSOCIBOIAF2N5EHKS7RO33XMKX5TD7 (unresolved) &lt;= 1.1 per 86400s (observed gross out 1)
+  - frequency-limit: &lt;= 5 call(s) per 86400s
+
+Installable OZ context rules (2) — see context-rule.json
+----------------------------
+  pw:deposit+withdraw  CallContract(CCJSSLAEVUEE2G5MEPGTN4C4RZKC3QMERU2VWUHET6DFQ6BPEYXW
+```
+
+## Turn 4 — Clarification (MUST ask — skill guardrail)
+
+&gt; This flow transferred about 1.0 token units into the vault. Cap at the observed gross outflow, or allow up to 1.1× over a day (default multiplier)?
+&gt; Also: keep `--constrain-arguments` **off** (flag only) or turn **on** (deny unobserved routes)?
+
+## Turn 5 — User
+
+&gt; Cap at observed × 1.1 for the day. Leave argument constraints off for now.
+
+## Turn 6 — Re-synthesize + simulate
+Tool calls: `synthesize` (capMultiplier=1.1), `simulate` (off), `simulate` (on for teaching the deny).
+
+Dry-run (constraints off) excerpt:
+```
+# policywright dry-run report
+
+| Scenario | Decision | Reason |
+| --- | --- | --- |
+| replay recorded flow | ✅ permit (permit) | within scope, lifetime, argument, spend cap, and frequency limits |
+| over the spend cap | ⛔ deny (spending-limit) | outflow of 1.1000001 CDOEGWQSTV4FEY344WTANJKH7OWSOCIBOIAF2N5EHKS7RO33XMKX5TD7 exceeds the 1.1 cap per 86400s |
+| call to an unseen function | ⛔ deny (scope) | set_admin @ CCJSSLAEVUEE2G5MEPGTN4C4RZKC3QMERU2VWUHET6DFQ6BPEYXW5MET is outside the context rule&#x27;s scope |
+| call after rule expiry | ⛔ deny (lifetime) | call at 1792204388 is after the rule expires at 1792204387 |
+| over the frequency limit | ⛔ deny (frequency-limit) | this would be call 6 within 86400s, over the cap of 5 |</pre></div>
+    <div class="card"><h3>MCP / CLI synthesize twin</h3><pre>policywright — synthesized smart-account authorization
+======================================================
+
+Source tx : 2dcff6618ff12fb629700cab627b3870afa3f0dd000becf88b2eb7826d0b2c1b
+Network   : testnet (recorded from rpc)
+
+Observed flow
+-------------
+  call swap_exact_tokens_for_tokens @ CCJUD55AG6W5HAI5LRVNKAE5WDP5XGZBUDS5WNTIVDU7O264UZZE7BRD
+  call harvest @ CCSLYYVQ575EAPCDOEYGVOI4NVYD2V7RP3F5HRP4LVDUWEJ4HOLVL357
+  out  1 native
+  in   0.03086 USDC
+
+Context rule
+------------
+  name        : pw:swap+harvest
+  valid until : 1787699316 (unix)
+  scope       :
+    - swap_exact_tokens_for_tokens @ CCJUD55AG6W5HAI5LRVNKAE5WDP5XGZBUDS5WNTIVDU7O264UZZE7BRD
+    - harvest @ CCSLYYVQ575EAPCDOEYGVOI4NVYD2V7RP3F5HRP4LVDUWEJ4HOLVL357
+
+Policies (2)
+--------
+  - spending-limit: native &lt;= 1.1 per 86400s (observed gross out 1)
+  - frequency-limit: &lt;= 5 call(s) per 86400s
+
+Argument scopes — advisory (flag only)
+--------------
+  - argument-constraint: swap_exact_tokens_for_tokens arg[2] (path) restricted to 2 observed token(s)
+
+Installable OZ context rules (3) — see context-rule.json
+----------------------------
+  pw:swap  CallContract(CCJUD55AG6W5HAI5LRVNKAE5WDP5XGZBUDS5WNTIVDU7O264UZZE7BRD)
+    valid until ledger 4336170; observed fns: swap_exact_tokens_for_tokens
+    - custom:FrequencyLimitPolicy { window_secs: 86400, max_calls: 5 }
+  pw:harvest  CallContract(CCSLYYVQ575EAPCDOEYGVOI4NVYD2V7RP3F5HRP4LVDUWEJ4HOLVL357)
+    valid until ledger 4336170; observed fns: harvest
+    - custom:FrequencyLimitPolicy { window_secs: 86400, max_calls: 5 }
+  pw:xfer:native  CallContract(CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC)
+    valid until ledger 4336170; observed fns: transfer
+    - stock:spending_limit { spending_limit: 11000000, period_ledgers: 17280 } (caps native transfers)
+
+  6 composition note(s) in context-rule.json (unit conversions,
+  deltas the stock policies cannot express).
+
+Note: the generated FrequencyLimitPolicy Rust is ILLUSTRATIVE and
+UNAUDITED — a starting point, not deploy-ready code.
+
+--- spec.json ---
+{
+  &quot;contextRule&quot;: {
+    &quot;name&quot;: &quot;pw:swap+harvest&quot;,
+    &quot;scopedCalls&quot;: [
+      {
+        &quot;contract&quot;: &quot;CCJUD55AG6W5HAI5LRVNKAE5WDP5XGZBUDS5WNTIVDU7O264UZZE7BRD&quot;,
+        &quot;fnName&quot;: &quot;swap_exact_tokens_for_tokens&quot;
+      },
+      {
+        &quot;contract&quot;: &quot;CCSLYYVQ575EAPCDOEYGVOI4NVYD2V7RP3F5HRP4LVDUWEJ4HOLVL357&quot;,
+        &quot;fnName&quot;: &quot;harvest&quot;
+      }
+    ],
+    &quot;validUntil&quot;: 1787699316
+  },
+  &quot;policies&quot;: [
+    {
+      &quot;kind&quot;: &quot;spending-limit&quot;,
+      &quot;asset&quot;: {
+        &quot;contractId&quot;: &quot;CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC&quot;,
+        &quot;symbol&quot;: &quot;native&quot;,</pre></div>
+  </div>
+</section>
+
+<section class="slide" data-lower="D2.3 · Simulate" data-sec="20">
+  <h2>Prove it is not too loose</h2>
+  <div class="grid">
+    <div class="card"><h3>constrainArguments off</h3><pre># policywright dry-run report
+
+Source: `examples/live/recorded-claim-swap.json`
+constrainArguments: **off** (default — unobserved routes FLAG / advisory only)
+
+| Scenario | Decision | Reason |
+| --- | --- | --- |
+| replay recorded flow | ✅ permit (permit) | within scope, lifetime, argument, spend cap, and frequency limits |
+| over the spend cap | ⛔ deny (spending-limit) | outflow of 1.1000001 native exceeds the 1.1 cap per 86400s |
+| call to an unseen function | ⛔ deny (scope) | set_admin @ CCSLYYVQ575EAPCDOEYGVOI4NVYD2V7RP3F5HRP4LVDUWEJ4HOLVL357 is outside the context rule&#x27;s scope |
+| call after rule expiry | ⛔ deny (lifetime) | call at 1787699317 is after the rule expires at 1787699316 |
+| over the frequency limit | ⛔ deny (frequency-limit) | this would be call 6 within 86400s, over the cap of 5 |
+| route through an unobserved token | ⚠️ flag (argument-constraint) | swap_exact_tokens_for_tokens path routes through unobserved token(s) CZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ; not enforced (constrainArguments is off) |
+| BLND→XLM (unobserved route) | ⚠️ flag (argument-constraint) | swap_exact_tokens_for_tokens path routes through unobserved token(s) CB22KRA3YZVCNCQI64JQ5WE7UY2VAV7WFLK6A2JN3HEX56T2EDAFO7QF; not enforced (constrainArguments is off) |
+
+</pre></div>
+    <div class="card"><h3>constrainArguments on — BLND→XLM deny</h3><pre># policywright dry-run report
+
+Source: `examples/live/recorded-claim-swap.json`
+constrainArguments: **on** (argument constraints enforced — unobserved routes DENIED)
+
+| Scenario | Decision | Reason |
+| --- | --- | --- |
+| replay recorded flow | ✅ permit (permit) | within scope, lifetime, argument, spend cap, and frequency limits |
+| over the spend cap | ⛔ deny (spending-limit) | outflow of 1.1000001 native exceeds the 1.1 cap per 86400s |
+| call to an unseen function | ⛔ deny (scope) | set_admin @ CCSLYYVQ575EAPCDOEYGVOI4NVYD2V7RP3F5HRP4LVDUWEJ4HOLVL357 is outside the context rule&#x27;s scope |
+| call after rule expiry | ⛔ deny (lifetime) | call at 1787699317 is after the rule expires at 1787699316 |
+| over the frequency limit | ⛔ deny (frequency-limit) | this would be call 6 within 86400s, over the cap of 5 |
+| route through an unobserved token | ⛔ deny (argument-constraint) | swap_exact_tokens_for_tokens path routes through unobserved token(s) CZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ |
+| BLND→XLM (unobserved route) | ⛔ deny (argument-constraint) | swap_exact_tokens_for_tokens path routes through unobserved token(s) CB22KRA3YZVCNCQI64JQ5WE7UY2VAV7WFLK6A2JN3HEX56T2EDAFO7QF |
+
+</pre></div>
+  </div>
+</section>
+
+<section class="slide" data-lower="D2.4 · Emit" data-sec="19">
+  <h2>Compose first, generate only when needed</h2>
+  <div class="grid">
+    <div class="card"><h3>Stock spending_limit</h3><pre>{
+  &quot;name&quot;: &quot;pw:xfer:native&quot;,
+  &quot;policy&quot;: {
+    &quot;policy&quot;: &quot;stock:spending_limit&quot;,
+    &quot;address&quot;: null,
+    &quot;installParams&quot;: {
+      &quot;spending_limit&quot;: &quot;11000000&quot;,
+      &quot;period_ledgers&quot;: 17280
+    },
+    &quot;paramsSource&quot;: &quot;OpenZeppelin/stellar-contracts@v0.7.2 packages/accounts/src/policies/spending_limit.rs:88-94 \u2014 SpendingLimitAccountParams { spending_limit: i128, period_ledgers: u32 }; install guards :367-405 (CallContract-only, positive params, AlreadyInstalled)&quot;,
+    &quot;derivedFrom&quot;: {
+      &quot;asset&quot;: {
+        &quot;contractId&quot;: &quot;CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC&quot;,
+        &quot;symbol&quot;: &quot;native&quot;,
+        &quot;decimals&quot;: 7,
+        &quot;resolved&quot;: true
+      },
+      &quot;observedGrossOut&quot;: &quot;10000000&quot;,
+      &quot;spendWindowSecs&quot;: 86400
+    }
+  }
+}</pre></div>
+    <div class="card"><h3>Generated FrequencyLimitPolicy</h3><pre>// =============================================================================
+//  ILLUSTRATIVE / UNAUDITED — NOT DEPLOY-READY
+//
+//  Generated contracts are illustrative and unaudited — not for production
+//  deployment until the Audit Bank audit.
+//
+//  This file was generated by policywright as a *starting point* for a custom
+//  OpenZeppelin Stellar smart-account policy. It compiles and its unit tests
+//  run against the real OZ `Policy` trait (stellar-accounts v0.7.2), and
+//  policywright deploys instances to TESTNET only. It has NOT been audited
+//  and MUST NOT be deployed to mainnet or used to guard real value.
+// =============================================================================
+#![no_std]
+
+//! # Frequency Limit Policy
+//!
+//! Bounds how often the scoped calls may run within a rolling wall-clock
+//! window: at most `max_calls` enforcements per `window_secs` seconds.
+//! Synthesized defaults observed by policywright: at most 5 call(s) per
+//! 86400 second(s).
+//!
+//! Implements the OpenZeppelin `stellar-accounts` v0.7.2 `Policy` trait —
+//! `install` / `enforce` / `uninstall` with an associated `AccountParams`
+//! type. There is no `can_enforce` hook; validation and state mutation both
+//! happen in `enforce`, which rejects by panicking.
+//!
+//! Storage follows the stock-policy pattern: all state lives under
+//! `FrequencyLimitStorageKey::AccountContext(smart_account, context_rule_id)`</pre></div>
+  </div>
+</section>
+
+<section class="slide" data-lower="D2.5 · Install" data-sec="28">
+  <h2>Install — human still signs</h2>
+  <div class="grid">
+    <div class="card"><h3>Live verify</h3><pre>verify ok — 3 context rule(s) match on-chain snapshot (live CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT).
+
+
+Smart account
+CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT
+
+Install txs
+5907ecbf…   589faaad…   36791fe4…
+
+Signer: labeled local-signer fallback (FACTS §5.3)
+Preferred: Freighter signAuthEntry when bridge available</pre></div>
+    <div class="card"><h3>Freighter preferred path</h3><pre>Attempted 2026-09-17 with Freighter 5.48 on testnet.
+Unpacked extension did not inject the page bridge —
+isConnected stayed false (BLOCKED-honest, no mock popup).
+
+Local-signer verify remains green.
+evidence/freighter/SESSION-2026-09-17.md</pre></div>
+  </div>
+</section>
+
+<section class="slide" data-lower="Evidence" data-sec="28">
+  <h2>Proof wall</h2>
+  <div class="grid">
+    <div class="card"><h3>D2.1–D2.5</h3><pre>D2.1 MCP — 4 tools + recorded session
+D2.2 Skill — packaged + conversation recording
+D2.3 Simulate — args off flag / on deny
+D2.4 Compose + generate — stock + FrequencyLimitPolicy
+D2.5 Install — live SA + verify green
+
+evidence/EVIDENCE.md
+evidence/sessions/
+evidence/demo/</pre></div>
+    <div class="card"><h3>Reality check</h3><pre>S1 / S2 / S6 PASS
+S3 AuthPayload invoke-through-account BLOCKED-honest
+S4 / S5 scripted sessions recorded
+
+Testnet only · UNAUDITED until T3 Audit Bank</pre></div>
+  </div>
+</section>
+
+<section class="slide end" data-lower="policywright" data-sec="10">
+  <h1>github.com/kunaldrall29/policywright</h1>
+  <p class="lead">policywright.lemmalabs.space</p>
+  <p><span class="badge">Built for SCF #44 — Record-to-Policy MCP + Agent skill</span></p>
+</section>
+
+</div>
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+const lower=document.getElementById('lower');
+const timer=document.getElementById('timer');
+let t0=performance.now();
+function show(n){
+  slides.forEach((s,i)=>s.classList.toggle('active', i===n));
+  lower.textContent=slides[n].dataset.lower;
+}
+function tick(){
+  const sec=Math.floor((performance.now()-t0)/1000);
+  timer.textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
+  requestAnimationFrame(tick);
+}
+tick();
+(async()=>{
+  for(let n=0;n<slides.length;n++){
+    show(n);
+    await new Promise(r=>setTimeout(r, Number(slides[n].dataset.sec)*1000));
+  }
+  show(slides.length-1);
+})();
+</script>
+</body>
+</html>
