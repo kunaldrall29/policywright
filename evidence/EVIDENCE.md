@@ -641,9 +641,11 @@ via local-signer fallback.
 imported; page bridge/`isConnected` failed for unpacked Freighter 5.48 —
 [evidence/freighter/SESSION-2026-09-17.md](./freighter/SESSION-2026-09-17.md).
 Local-signer install+verify remains green (incl. Freighter-linked
-`CALCGK5…` this session). **Remaining:** polished ≤5:00 submission cut of
-[docs/demo-script-t2.md](../docs/demo-script-t2.md) (partial capture under
-`evidence/demo/`); SCF form paste is human. Cohort-wallet track → T3.
+`CALCGK5…` this session). **Demo video (narrated):** primary cut
+[evidence/demo/t2-demo-complete-with-audio.mp4](./demo/t2-demo-complete-with-audio.mp4);
+live CLI/docs companion
+[evidence/demo/t2-demo-live-cli-docs-with-audio.mp4](./demo/t2-demo-live-cli-docs-with-audio.mp4).
+SCF form paste remains human (`TRANCHE2-FORM.md`). Cohort-wallet track → T3.
 
 ---
 
@@ -663,7 +665,7 @@ Stated plainly so no reviewer has to infer it.
 | Dry-run + argument-level scope                             | T2      | **Delivered** — D2.3                                                        |
 | Net-new policy codegen with storage segregation            | T2      | **Delivered** — D2.4                                                        |
 | Wallet / testnet smart-account install (local-signer path) | T2      | **Delivered** — D2.5 fallback; Freighter preferred **BLOCKED-honest**       |
-| End-to-end demo video                                      | T2      | Partial capture + script ([demo-script-t2.md](../docs/demo-script-t2.md))   |
+| End-to-end demo video                                      | T2      | **Delivered** — narrated cuts in [evidence/demo/](./demo/)                  |
 | Audit, mainnet, OZ validation, walkthroughs                | T3      | Not started                                                                 |
 
 ---

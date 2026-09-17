@@ -8,21 +8,21 @@ flow — not a five-feature tour.
 > In Tranche 1 this worked from the command line — in Tranche 2, an agent can
 > use it, a human still signs, and the chain enforces what was granted.
 
-**EXPECT capture date:** 2026-09-17 (CLI beats + docs redeploy + MCP/skill
-transcripts committed). Freighter popup remains **BLOCKED-honest** (unpacked
-extension bridge — see [evidence/freighter/SESSION-2026-09-17.md](../evidence/freighter/SESSION-2026-09-17.md)).
-Partial screen capture: [evidence/demo/t2-demo-beats-docs-cli-wallet.mp4](../evidence/demo/t2-demo-beats-docs-cli-wallet.mp4).
+**EXPECT capture date:** 2026-09-17. Narrated submission videos committed under
+`evidence/demo/` (primary: `t2-demo-complete-with-audio.mp4`). Freighter
+preferred path remains **BLOCKED-honest** for unpacked extension bridge —
+[evidence/freighter/SESSION-2026-09-17.md](../evidence/freighter/SESSION-2026-09-17.md).
 
 **Honest gate summary:**
 
 | Beat                  | Surface                           | Status (2026-09-17)                                                                                                                |
 | --------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 0 Cold open           | repo, CI, docs                    | Recordable — docs live (`policywright.lemmalabs.space`, Shipped)                                                                   |
-| 1 Agent asks          | MCP + Claude skill                | Transcripts recorded under `evidence/sessions/`; film agent-UI optional                                                            |
-| 2 Deny table          | dry-run + `--constrain-arguments` | Recordable — REAL CLI `[EXPECT]` below                                                                                             |
-| 3 Artefacts           | compose + generate                | Recordable — REAL CLI `[EXPECT]` below                                                                                             |
-| 4 Install / Freighter | wallet + verify                   | Install+verify green via local-signer; Freighter popup **BLOCKED-honest**. **Omit chain kill-shot** (S3 BLOCKED).                  |
-| 5 Proof wall          | EVIDENCE + close                  | Recordable                                                                                                                         |
+| 0 Cold open           | repo, CI, docs                    | Recorded (narrated) — docs live (`policywright.lemmalabs.space`, Shipped)                                                          |
+| 1 Agent asks          | MCP + Claude skill                | Recorded — transcripts + narrated deck / live CLI synth                                                                            |
+| 2 Deny table          | dry-run + `--constrain-arguments` | Recorded (narrated)                                                                                                                |
+| 3 Artefacts           | compose + generate                | Recorded (narrated)                                                                                                                |
+| 4 Install / Freighter | wallet + verify                   | Verify green on camera (local-signer); Freighter popup **BLOCKED-honest**. **Omit chain kill-shot** (S3 BLOCKED).                  |
+| 5 Proof wall          | EVIDENCE + close                  | Recorded (narrated)                                                                                                                |
 
 S3 chain enforcement through the C-account was **BLOCKED-honest**
 ([evidence/REALITY-CHECK.md](../evidence/REALITY-CHECK.md)). Do **not** film
@@ -77,9 +77,9 @@ Evidence: [evidence/EVIDENCE.md](../evidence/EVIDENCE.md)
 
 **Lower-third:** `D2.2 · Claude skill` → `D2.1 · MCP tools` while tools fire
 
-**Status: [BLOCKER] / filmable when human available** — MCP server and skill
-are in-repo. Film against a real MCP session (`npm run mcp`) with the skill
-loaded.
+**Status: filmable / recorded** — MCP server and skill are in-repo. Film against
+a real MCP session (`npm run mcp`) with the skill loaded, or use the committed
+narrated deck + [evidence/sessions/](../evidence/sessions/).
 
 **SHOW**
 
@@ -260,8 +260,8 @@ On-chain generated policy:
 **Lower-third:** `D2.5 · Install`
 
 **Status:** Testnet smart account already holds three installed rules.
-Local-signer install path is green; **Freighter preferred path is [BLOCKER]**
-until a human films the popup.
+Local-signer install path is green on camera; **Freighter preferred path is
+BLOCKED-honest** for unpacked extension bridge (documented — do not mock).
 
 **SHOW (recordable today without Freighter)**
 
@@ -328,9 +328,9 @@ Narration fallback if only local-signer is on camera:
 **SAY**
 
 > Adversarially usage-tested where we could; findings fixed or disclosed.
-> Limits: testnet-only; unaudited until the Tranche 3 Audit Bank audit. Human
-> session recordings and Freighter interactive signing close the remaining
-> blockers.
+> Limits: testnet-only; unaudited until the Tranche 3 Audit Bank audit. MCP and
+> skill sessions are recorded under evidence/sessions; Freighter interactive
+> signing remains preferred-path polish when the browser bridge is available.
 
 ---
 

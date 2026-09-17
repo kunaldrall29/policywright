@@ -124,7 +124,9 @@ https://policywright.lemmalabs.space
 **Status:** Install + live verify green (local-signer). Freighter preferred path
 **BLOCKED-honest** (unpacked extension page-bridge — see
 [evidence/freighter/SESSION-2026-09-17.md](./freighter/SESSION-2026-09-17.md)).
-Partial demo capture: [evidence/demo/](./demo/).
+**Narrated demo videos:** [evidence/demo/t2-demo-complete-with-audio.mp4](./demo/t2-demo-complete-with-audio.mp4)
+(primary) · [evidence/demo/t2-demo-live-cli-docs-with-audio.mp4](./demo/t2-demo-live-cli-docs-with-audio.mp4)
+(live companion).
 
 ### Generality (bonus / reality-check S2)
 
@@ -140,10 +142,8 @@ https://github.com/kunaldrall29/policywright/tree/cursor/t2-complete-production-
 
 ## Remaining human steps
 
-1. **SCF form paste** — copy this file into the tranche form ([TRANCHE2-FORM.md](./TRANCHE2-FORM.md)).
-2. **Optional video polish** — ≤5:00 cut from [docs/demo-script-t2.md](../docs/demo-script-t2.md) using
-   [evidence/demo/](./demo/) + agent-UI screen if desired (Freighter popup unavailable — title-card that beat).
-3. **Freighter preferred path** — blocked in this environment (content-script bridge); local-signer is the verified path. Re-try on a normal Chrome Web Store Freighter install when filming.
+1. **SCF form paste** — copy this file into the tranche form.
+2. **Optional:** Freighter Web Store install on a normal desktop if you want the preferred-path popup in a re-cut (not required for local-signer evidence).
 
 (S3 chain invoke-through-account enforcement is honestly BLOCKED for AuthPayload reasons — disclosed in REALITY-CHECK.md / T3-NOTES.md — and is **not** claimed as a T2 recording deliverable.)
 
