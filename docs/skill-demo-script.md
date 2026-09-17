@@ -32,7 +32,15 @@ transaction" producing a reviewed policy._
 - `simulate` run before any install discussion.
 - Install refused as an agent action; human pointed to CLI/wallet.
 
-## [BLOCKER] Human recording
+## Recorded skill demo conversation (2026-09-17)
 
-A human must record this conversation (agent UI + tool traces) and store it
-under `evidence/` when closing D2.2. CI does not replace the recording.
+Scripted conversation + real MCP tool I/O matching the turn table above:
+
+- [evidence/sessions/skill-demo-conversation-2026-09-17.md](../evidence/sessions/skill-demo-conversation-2026-09-17.md)
+
+Pass criteria checked in that artefact: four tools, clarification turn,
+UNAUDITED banner, `simulate` before install talk, install refused as an agent
+action (CLI / Freighter pointed instead).
+
+Optional polish: a human agent-UI screen capture of the same script remains
+nice-to-have for the submission video.

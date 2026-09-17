@@ -1,6 +1,7 @@
 # Tranche 2 — SCF form (paste-ready)
 
-Every link, hash, and version below was **fetched / re-run on 2026-09-16**.
+Every link, hash, and version below was **fetched / re-run on 2026-09-17**
+(sessions + docs redeploy; on-chain anchors also verified 2026-09-16).
 No placeholders. Paste into the SCF tranche form; adjust only if a live
 value changes the morning of submit.
 
@@ -31,24 +32,11 @@ https://github.com/kunaldrall29/policywright
 
 https://policywright.lemmalabs.space
 
-**Deploy note (2026-09-16):** live site still serves pre–Phase-3 content
-(`Last-Modified: Thu, 10 Sep 2026`; Overview still reads “in development” /
-“no MCP…”). Repo `site/` already has the Phase-3 rewrite
-(`shipped-testnet`, award sentence, T2 rows). Redeploy before reviewers open
-the public docs.
-
-### Docs redeploy checklist (Vercel)
-
-1. Push / merge the branch that contains updated `site/src/content/docs/`.
-2. In the Vercel project for this repo, set **Root Directory** to `site`
-   (auto-detect Astro). Root `vercel.json` is ignored when Root Directory is
-   `site`.
-3. Confirm domain **policywright.lemmalabs.space** under Settings → Domains.
-4. DNS (if not already): `CNAME policywright → cname.vercel-dns.com.`
-5. After deploy, hard-refresh Overview + Roadmap — expect `shipped-testnet`
-   badge, award sentence, and T2 “Shipped” rows (not “not started”).
-
-Canonical checklist also in [README.md](../README.md#deploying-to-policywrightlemmalabsspace-vercel).
+**Deploy note (2026-09-17):** production redeployed — Overview shows
+**Shipped (testnet)**; MCP tools + Claude skill pages live.
+`Last-Modified: Thu, 17 Sep 2026`. Deployment
+`dpl_EkBBi4cUpNyxj5F3JyFbqqbHsjYX` → aliases
+`policywright.lemmalabs.space` + `policywright-docs.vercel.app`.
 
 ---
 
@@ -65,9 +53,10 @@ Canonical checklist also in [README.md](../README.md#deploying-to-policywrightle
 | Tools (exactly 4) | `record`, `synthesize`, `simulate`, `verify` — no install                                                                                                                                                                                                                                                                                   |
 | Stdio tests       | https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/test/mcp-stdio.test.ts (`npm test` → 8 MCP tests green)                                                                                                                                                                                                |
 | Docs              | https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/docs/mcp-server.md · https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/docs/mcp-determinism.md · https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/docs/mcp-reference-session.md |
+| Recorded session  | https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/evidence/sessions/mcp-reference-session-latest.md                                                                                                                                                                                                      |
 | Evidence section  | https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/evidence/EVIDENCE.md                                                                                                                                                                                                                                   |
 
-**Status:** Shipped (code + CI). **BLOCKER:** human reference session recording.
+**Status:** COMPLETE — code + CI + recorded stdio reference session (2026-09-17).
 
 ### D2.2 — Claude skill
 
@@ -77,8 +66,9 @@ Canonical checklist also in [README.md](../README.md#deploying-to-policywrightle
 | ----------- | ----------------------------------------------------------------------------------------------------------------- |
 | Skill       | https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/skills/policywright/SKILL.md |
 | Demo script | https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/docs/skill-demo-script.md    |
+| Recording   | https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/evidence/sessions/skill-demo-conversation-2026-09-17.md |
 
-**Status:** Packaged. **BLOCKER:** human skill demo conversation recording.
+**Status:** COMPLETE — packaged + recorded skill conversation (2026-09-17).
 
 ### D2.3 — Dry-run + argument-level scope
 
@@ -131,23 +121,29 @@ Canonical checklist also in [README.md](../README.md#deploying-to-policywrightle
 | Install docs             | https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/docs/smart-account-install.md                                                       |
 | Reality check            | https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/evidence/REALITY-CHECK.md                                                           |
 
-**Status:** Install + live verify green (local-signer). **BLOCKER:** Freighter interactive signing (preferred path) + Phase 6 demo video recording.
+**Status:** Install + live verify green (local-signer). Freighter preferred path
+**BLOCKED-honest** (unpacked extension page-bridge — see
+[evidence/freighter/SESSION-2026-09-17.md](./freighter/SESSION-2026-09-17.md)).
+Partial demo capture: [evidence/demo/](./demo/).
 
 ### Generality (bonus / reality-check S2)
 
 Novel sample-vault deposit→withdraw (no Blend/Soroswap assumptions):
 https://github.com/kunaldrall29/policywright/tree/cursor/t2-complete-production-93d7/examples/sample-vault
 
-- Deposit tx: https://stellar.expert/explorer/testnet/tx/e14610110c2cd5f760455664c66e96cb1cfc9093f81c21353eff0a4976f623b0
-- Withdraw tx: https://stellar.expert/explorer/testnet/tx/3d0113ff3cf56773f8064f100d14c9e3d785e19c4a0d588bb4ea5ba6ceda2322
+- Deposit tx (prior): https://stellar.expert/explorer/testnet/tx/e14610110c2cd5f760455664c66e96cb1cfc9093f81c21353eff0a4976f623b0
+- Withdraw tx (prior): https://stellar.expert/explorer/testnet/tx/3d0113ff3cf56773f8064f100d14c9e3d785e19c4a0d588bb4ea5ba6ceda2322
+- Same-day (2026-09-17) deposit: https://stellar.expert/explorer/testnet/tx/af094330a3f86a500679fc011a847c000e5a6018c83a73c429496f54ee532445
+- Same-day (2026-09-17) withdraw: https://stellar.expert/explorer/testnet/tx/2f0a27b953635f9de1762bcf6133d62d432ea66ef32439509aa4b14768f4facf
 
 ---
 
-## BLOCKERS (exactly the human-recording set)
+## Remaining human steps
 
-1. **D2.1** — Human runs + records the MCP reference agent session ([docs/mcp-reference-session.md](../docs/mcp-reference-session.md)).
-2. **D2.2** — Human runs + records the Claude skill demo conversation ([docs/skill-demo-script.md](../docs/skill-demo-script.md)).
-3. **D2.5 / Phase 6** — Freighter interactive signing for the preferred wallet path; end-to-end demo video per [docs/demo-script-t2.md](../docs/demo-script-t2.md).
+1. **SCF form paste** — copy this file into the tranche form ([TRANCHE2-FORM.md](./TRANCHE2-FORM.md)).
+2. **Optional video polish** — ≤5:00 cut from [docs/demo-script-t2.md](../docs/demo-script-t2.md) using
+   [evidence/demo/](./demo/) + agent-UI screen if desired (Freighter popup unavailable — title-card that beat).
+3. **Freighter preferred path** — blocked in this environment (content-script bridge); local-signer is the verified path. Re-try on a normal Chrome Web Store Freighter install when filming.
 
 (S3 chain invoke-through-account enforcement is honestly BLOCKED for AuthPayload reasons — disclosed in REALITY-CHECK.md / T3-NOTES.md — and is **not** claimed as a T2 recording deliverable.)
 

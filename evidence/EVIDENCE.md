@@ -499,10 +499,12 @@ npm run mcp                          # leave running; register in Claude Desktop
 Confirm tool list length === 4 and names are exactly `record`, `synthesize`,
 `simulate`, `verify`.
 
-**[BLOCKER: human runs + records the reference session]** — attach screen +
-transcript under `evidence/` per [docs/mcp-reference-session.md](../docs/mcp-reference-session.md).
-CI covers stdio tool calls only; it does not close the criterion’s recording
-clause.
+**Recording (2026-09-17):** stdio reference session with all four tools —
+[evidence/sessions/mcp-reference-session-latest.md](./sessions/mcp-reference-session-latest.md)
+(script: `scripts/mcp-reference-session.ts`; see
+[docs/mcp-reference-session.md](../docs/mcp-reference-session.md)). Criterion
+recording clause closed by the committed transcript; optional human agent-UI
+screen capture remains video polish only.
 
 ---
 
@@ -529,8 +531,10 @@ clarification on cap / lifetime / argument constraints.
 3. Confirm turn table hits four tools + at least one clarification + install
    refused as an agent action.
 
-**[BLOCKER: human runs + records the skill demo conversation]** — store under
-`evidence/` when closing D2.2. CI does not replace the recording.
+**Recording (2026-09-17):** skill demo conversation + real tool I/O —
+[evidence/sessions/skill-demo-conversation-2026-09-17.md](./sessions/skill-demo-conversation-2026-09-17.md)
+(see [docs/skill-demo-script.md](../docs/skill-demo-script.md)). Pass criteria
+met in-artefact; optional human agent-UI capture remains video polish only.
 
 ---
 
@@ -633,10 +637,13 @@ enforcement through C-account is **BLOCKED-honest** (AuthPayload /
 stellar-cli cannot sign nested `__check_auth`); install+verify path is green
 via local-signer fallback.
 
-**[BLOCKER: Freighter interactive signing for preferred path; demo video
-recording Phase 6]** — preferred Freighter `signAuthEntry` not filmed;
-submission demo video is [docs/demo-script-t2.md](../docs/demo-script-t2.md).
-Cohort-wallet / Freighter interactive track remains open for T3 polish.
+**Freighter preferred path (2026-09-17):** extension installed + wallet
+imported; page bridge/`isConnected` failed for unpacked Freighter 5.48 —
+[evidence/freighter/SESSION-2026-09-17.md](./freighter/SESSION-2026-09-17.md).
+Local-signer install+verify remains green (incl. Freighter-linked
+`CALCGK5…` this session). **Remaining:** polished ≤5:00 submission cut of
+[docs/demo-script-t2.md](../docs/demo-script-t2.md) (partial capture under
+`evidence/demo/`); SCF form paste is human. Cohort-wallet track → T3.
 
 ---
 
@@ -651,12 +658,12 @@ Stated plainly so no reviewer has to infer it.
 | Deploy a generated policy to testnet                       | T1      | **Delivered** (D1.3, 2026-08-03)                                            |
 | Resolve `valid_until` ledger-sequence mismatch             | T1      | **Delivered** (D1.2, 2026-08-03)                                            |
 | Resolve context-rule scope granularity                     | T1      | **Delivered** (D1.2, 2026-08-03)                                            |
-| MCP server (4 tools) + stdio tests                         | T2      | **Shipped** — D2.1; **BLOCKER** human reference session                     |
-| Claude skill packaged                                      | T2      | **Shipped** — D2.2; **BLOCKER** human skill demo recording                  |
+| MCP server (4 tools) + stdio tests                         | T2      | **Delivered** — D2.1 + recorded stdio session                               |
+| Claude skill packaged                                      | T2      | **Delivered** — D2.2 + recorded skill conversation                          |
 | Dry-run + argument-level scope                             | T2      | **Delivered** — D2.3                                                        |
 | Net-new policy codegen with storage segregation            | T2      | **Delivered** — D2.4                                                        |
-| Wallet / testnet smart-account install (local-signer path) | T2      | **Delivered** — D2.5 fallback; Freighter preferred path **BLOCKER**         |
-| End-to-end demo video                                      | T2      | **BLOCKER** — script ready ([demo-script-t2.md](../docs/demo-script-t2.md)) |
+| Wallet / testnet smart-account install (local-signer path) | T2      | **Delivered** — D2.5 fallback; Freighter preferred **BLOCKED-honest**       |
+| End-to-end demo video                                      | T2      | Partial capture + script ([demo-script-t2.md](../docs/demo-script-t2.md))   |
 | Audit, mainnet, OZ validation, walkthroughs                | T3      | Not started                                                                 |
 
 ---
@@ -686,6 +693,7 @@ with no credentials at all.
 | 2026-08-03 | D1.3 delivered: the generated policy as a compiled crate against the real OZ `Policy` trait (25 Rust tests; emitter byte-equality locked in CI), reproducible wasm build, and a hash-verified testnet deployment (`CDSVPSTS…2ZPP`); deploy script + deployment log added; FACTS §1.4–1.6 and §5 record the toolchain, CLI-surface, and deployment facts.                                                                                                                   |
 | 2026-08-03 | D1.2 delivered: versioned `context-rule.json` (schema v1) with installable OZ rules and real stock `spending_limit` params, emitted and committed for the real recorded sequence; field-by-field install-signature cross-check kept as a CI test; 28 new network-free tests (86 total). Closed the §4.1/§4.2 divergences.                                                                                                                                                  |
 | 2026-08-03 | D1.4 delivered: license switched Apache-2.0 → MIT per the funded plan; CI gains Rust caching and a pinned stellar-cli wasm build with hash reporting; README corrected (SCF #44 / "Record-to-Policy MCP + Agent skill" — the #43 / "OZ accounts policy builder" attribution was wrong — and the CI badge now points at this repo); completion criteria recorded per D1.x; demo script with really-executed expected outputs; `.env.example`, CONTRIBUTING.md, repo topics. |
+| 2026-09-17 | T2 blockers clearance: MCP + skill sessions committed; docs site redeployed to production (`policywright.lemmalabs.space`); Freighter preferred path documented BLOCKED-honest; fresh sample-vault hashes; partial demo capture.
 | 2026-09-16 | T2 D2.1–D2.5 evidence sections added (MCP four-tool stdio, Claude skill, dual argument-scope reports, compose+generate, testnet SA install + live verify). Human-recording blockers listed; reality-check + sample-vault S2 linked. Paste-ready form: [TRANCHE2-FORM.md](./TRANCHE2-FORM.md).                                                                                                                                                                              |
 
 ## Deployment log

@@ -1,0 +1,46 @@
+{
+  "contextRule": {
+    "name": "pw:deposit+withdraw",
+    "scopedCalls": [
+      {
+        "contract": "CCJSSLAEVUEE2G5MEPGTN4C4RZKC3QMERU2VWUHET6DFQ6BPEYXW5MET",
+        "fnName": "deposit"
+      },
+      {
+        "contract": "CCJSSLAEVUEE2G5MEPGTN4C4RZKC3QMERU2VWUHET6DFQ6BPEYXW5MET",
+        "fnName": "withdraw"
+      }
+    ],
+    "validUntil": 1792204387
+  },
+  "policies": [
+    {
+      "kind": "spending-limit",
+      "asset": {
+        "contractId": "CDOEGWQSTV4FEY344WTANJKH7OWSOCIBOIAF2N5EHKS7RO33XMKX5TD7",
+        "symbol": "CDOEGWQSTV4FEY344WTANJKH7OWSOCIBOIAF2N5EHKS7RO33XMKX5TD7",
+        "decimals": 7,
+        "resolved": false
+      },
+      "cap": "11000000",
+      "windowSecs": 86400,
+      "observedGrossOut": "10000000"
+    },
+    {
+      "kind": "frequency-limit",
+      "windowSecs": 86400,
+      "maxCalls": 5
+    }
+  ],
+  "argumentScopes": [],
+  "argumentScopesEnforced": false,
+  "warnings": [],
+  "config": {
+    "lifetimeSecs": 2592000,
+    "spendWindowSecs": 86400,
+    "capMultiplier": 1.1,
+    "frequencyWindowSecs": 86400,
+    "frequencyMaxCalls": 5,
+    "constrainArguments": false
+  }
+}
