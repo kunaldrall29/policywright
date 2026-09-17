@@ -23,3 +23,8 @@ contracts/**/test_snapshots/
 # sample-vault build / local flow output
 examples/sample-vault/target/
 examples/sample-vault/out/
+
+# Freighter unpacked extension (local)
+tools/freighter-extension/
+
+wallet/install-plan.json

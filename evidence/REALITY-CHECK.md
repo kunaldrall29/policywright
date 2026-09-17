@@ -15,8 +15,8 @@ Severity: `BLOCKER` | `BUG` | `DOC-GAP` | `UX-FRICTION` | `DESIGN-QUESTION` (→
 | S1 Cold developer, docs-only | **PASS**           | Clone path + `npm pack` → `npx policywright synth` on golden recording                                |
 | S2 Novel flow (sample-vault) | **PASS**           | Original deposit→withdraw; pipeline clean; no Blend/Soroswap leak                                     |
 | S3 Chain enforcement         | **BLOCKED-honest** | Verify green; user calls through C-account blocked on AuthPayload signing                             |
-| S4 Agent session             | **BLOCKED-honest** | `[BLOCKER: human runs + records]` — [docs/reality-agent-session.md](../docs/reality-agent-session.md) |
-| S5 Skill session             | **BLOCKED-honest** | `[BLOCKER: human runs + records]` — [docs/reality-skill-session.md](../docs/reality-skill-session.md) |
+| S4 Agent session             | **PASS** (scripted) | [evidence/sessions/mcp-reference-session-latest.md](./sessions/mcp-reference-session-latest.md) |
+| S5 Skill session             | **PASS** (scripted) | [evidence/sessions/skill-demo-conversation-2026-09-17.md](./sessions/skill-demo-conversation-2026-09-17.md) |
 | S6 Hostile inputs            | **PASS**           | All cases typed + actionable; zero-involvement fixed                                                  |
 
 **Verdict:** S1, S2, S6 green; S3 honestly BLOCKED (named cause); S4/S5 human blockers documented. Gate met.

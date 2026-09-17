@@ -8,19 +8,20 @@ flow — not a five-feature tour.
 > In Tranche 1 this worked from the command line — in Tranche 2, an agent can
 > use it, a human still signs, and the chain enforces what was granted.
 
-**EXPECT capture date:** 2026-09-16 (CLI beats re-run this session against
-`examples/live/recorded-claim-swap.json`). Agent / Freighter beats are
-**[BLOCKER]** until a human films them.
+**EXPECT capture date:** 2026-09-17 (CLI beats + docs redeploy + MCP/skill
+transcripts committed). Freighter popup remains **BLOCKED-honest** (unpacked
+extension bridge — see [evidence/freighter/SESSION-2026-09-17.md](../evidence/freighter/SESSION-2026-09-17.md)).
+Partial screen capture: [evidence/demo/t2-demo-beats-docs-cli-wallet.mp4](../evidence/demo/t2-demo-beats-docs-cli-wallet.mp4).
 
 **Honest gate summary:**
 
-| Beat                  | Surface                           | Status (2026-09-16)                                                                                                                |
+| Beat                  | Surface                           | Status (2026-09-17)                                                                                                                |
 | --------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 0 Cold open           | repo, CI, docs                    | Recordable (redeploy docs site if Overview still says “in development”)                                                            |
-| 1 Agent asks          | MCP + Claude skill                | **[BLOCKER]** / filmable when human available — code ready (`npm run mcp`, `skills/policywright/`)                                 |
-| 2 Deny table          | dry-run + `--constrain-arguments` | Recordable now — REAL CLI `[EXPECT]` below                                                                                         |
-| 3 Artefacts           | compose + generate                | Recordable now — REAL CLI `[EXPECT]` below                                                                                         |
-| 4 Install / Freighter | wallet + verify                   | Install+verify green via local-signer; **[BLOCKER]** Freighter popup. **Omit chain kill-shot** (S3 BLOCKED — say nothing implied). |
+| 0 Cold open           | repo, CI, docs                    | Recordable — docs live (`policywright.lemmalabs.space`, Shipped)                                                                   |
+| 1 Agent asks          | MCP + Claude skill                | Transcripts recorded under `evidence/sessions/`; film agent-UI optional                                                            |
+| 2 Deny table          | dry-run + `--constrain-arguments` | Recordable — REAL CLI `[EXPECT]` below                                                                                             |
+| 3 Artefacts           | compose + generate                | Recordable — REAL CLI `[EXPECT]` below                                                                                             |
+| 4 Install / Freighter | wallet + verify                   | Install+verify green via local-signer; Freighter popup **BLOCKED-honest**. **Omit chain kill-shot** (S3 BLOCKED).                  |
 | 5 Proof wall          | EVIDENCE + close                  | Recordable                                                                                                                         |
 
 S3 chain enforcement through the C-account was **BLOCKED-honest**
