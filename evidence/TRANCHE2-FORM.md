@@ -186,3 +186,130 @@ Tranche 3 reviewer relationship: validation of generated `Policy` trait usage
 against `stellar-accounts` 0.7.x+, compose-first guidance on stock vs custom
 policies, and a named point of contact ahead of the SCF Audit Bank / mainnet
 walkthroughs.
+
+---
+
+## SCF Build — Tranche Completion Form (paste fields)
+
+Copy each block into the matching form field. Submission: **Policywright** ·
+Round: **SCF #44** · Stage: **Pre-Launch #2 - Testnet** · Telegram: **kunaldrall**.
+
+### Are you ready to submit your next tranche of deliverables?
+
+Yes
+
+### Tranche Deliverables
+
+Tranche 2 (Pre-Launch #2 — Testnet) deliverables for Policywright (SCF #44,
+“Record-to-Policy MCP + Agent skill”), matching the approved award plan:
+
+1) MCP server — Local stdio MCP exposing exactly four tools: record,
+synthesize, simulate, verify (no install/deploy tool by design). Deterministic
+structured I/O; CI stdio tests green. Reference session recorded.
+Proof: https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/src/mcp/server.ts
+Session: https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/evidence/sessions/mcp-reference-session-latest.md
+
+2) Agent skill — Packaged Claude/Agent skill (`skills/policywright/SKILL.md`)
+wrapping the MCP with clarification prompts (cap / lifetime / argument
+constraints), UNAUDITED banner, and install refused as an agent action.
+Conversation recording: https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/evidence/sessions/skill-demo-conversation-2026-09-17.md
+
+3) Dry-run harness + argument-level scope — Permit/deny/flag report for the
+recorded Blend claim→Soroswap flow; BLND→XLM is a flag with constraints off
+and a deny with `--constrain-arguments`. Tests green.
+Reports: https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/examples/live/simulation-report-args-off.md
+https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/examples/live/simulation-report-args-on.md
+
+4) Net-new policy codegen with storage segregation (compose-first) — Emits
+stock OZ `spending_limit` where it fits and a generated
+`FrequencyLimitPolicy` (storage keyed by smart_account + context_rule_id)
+where it does not. Both compile and pass simulation; FrequencyLimitPolicy
+live on testnet.
+Contract: https://stellar.expert/explorer/testnet/contract/CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP
+Wasm: 42227f2b6150c95a7084bb7c5ff2e7a40793eae39bf0c5dc95bd752d18ee6eed
+
+5) Wallet / smart-account install (testnet E2E) — Testnet OZ smart account
+with three installed context rules (swap / harvest / native transfer), live
+on-chain verify green. Signing path: labeled local-signer fallback (FACTS);
+Freighter preferred path attempted and documented honestly when the browser
+bridge was unavailable. Narrated E2E demo recorded.
+Smart account: https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT
+Install txs: https://stellar.expert/explorer/testnet/tx/5907ecbf76be7738fc1468dbfb4023a4833fe63a011dbe73b85268ce9b6fe8da · https://stellar.expert/explorer/testnet/tx/589faaad0a4ff19fed88b5fe9714f21d930b4b541b9b24469d34868bb54b30aa · https://stellar.expert/explorer/testnet/tx/36791fe400463f32654ed8b003c7d7c776e5fe9775bc3631ff835e1a41a44654
+
+Bonus generality: novel sample-vault deposit→withdraw (no Blend/Soroswap
+assumptions) with same-day hashes for agent sessions.
+
+Award provenance: Built in response to the SCF 'OZ accounts policy builder'
+RFP (Q2 2026), funded in round SCF #44 as the awarded submission
+'Record-to-Policy MCP + Agent skill.'
+
+Repo: https://github.com/kunaldrall29/policywright
+Docs: https://policywright.lemmalabs.space (Shipped testnet)
+Evidence: https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/evidence/EVIDENCE.md
+PR pack: https://github.com/kunaldrall29/policywright/pull/4
+
+### Deliverable Verification — Video
+
+Upload `evidence/demo/t2-demo-complete-with-audio.mp4` (primary, ~2:33,
+narrated; covers D2.1–D2.5) to YouTube / Drive / Loom as **public** or
+unlisted-with-link, then paste the public URL here.
+
+Source file in repo:
+https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/evidence/demo/t2-demo-complete-with-audio.mp4
+
+Optional companion (live CLI/docs, ~4:00):
+https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/evidence/demo/t2-demo-live-cli-docs-with-audio.mp4
+
+(After upload, replace this paragraph with only the public video URL.)
+
+### Additional Deliverable Verification
+
+- Evidence master: https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/evidence/EVIDENCE.md
+- Reality check: https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/evidence/REALITY-CHECK.md
+- MCP reference session: https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/evidence/sessions/mcp-reference-session-latest.md
+- Skill demo conversation: https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/evidence/sessions/skill-demo-conversation-2026-09-17.md
+- Docs site: https://policywright.lemmalabs.space
+- Architecture / MCP tools: https://policywright.lemmalabs.space/architecture/ · https://policywright.lemmalabs.space/reference/mcp-tools/
+- Smart account (testnet): https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT
+- FrequencyLimitPolicy (testnet): https://stellar.expert/explorer/testnet/contract/CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP
+- Install tx (pw:swap): https://stellar.expert/explorer/testnet/tx/5907ecbf76be7738fc1468dbfb4023a4833fe63a011dbe73b85268ce9b6fe8da
+- Install tx (pw:harvest): https://stellar.expert/explorer/testnet/tx/589faaad0a4ff19fed88b5fe9714f21d930b4b541b9b24469d34868bb54b30aa
+- Install tx (pw:xfer:native): https://stellar.expert/explorer/testnet/tx/36791fe400463f32654ed8b003c7d7c776e5fe9775bc3631ff835e1a41a44654
+- Sample-vault deposit (2026-09-17): https://stellar.expert/explorer/testnet/tx/af094330a3f86a500679fc011a847c000e5a6018c83a73c429496f54ee532445
+- Sample-vault withdraw (2026-09-17): https://stellar.expert/explorer/testnet/tx/2f0a27b953635f9de1762bcf6133d62d432ea66ef32439509aa4b14768f4facf
+- T2 PR: https://github.com/kunaldrall29/policywright/pull/4
+- Reproduce locally: `git clone https://github.com/kunaldrall29/policywright && cd policywright && npm ci && npm test && npm run demo && npm run mcp`
+
+### Support Needed
+
+Please introduce an OpenZeppelin accounts-package technical contact for a
+Tranche 3 reviewer relationship: validation of generated Policy trait usage
+against stellar-accounts 0.7.x+, compose-first guidance on stock vs custom
+policies, and a named point of contact ahead of the SCF Audit Bank / mainnet
+walkthroughs. Also welcome Stellar LaunchKit / Audit Bank guidance once T2
+is accepted.
+
+### Product Testing (for SCF testers)
+
+Policywright is local-first — no hosted login, no API keys, no PII, no
+custodied secrets. Testers run on their machine against Soroban **testnet**.
+
+How to try it:
+1. Clone https://github.com/kunaldrall29/policywright (branch
+   `cursor/t2-complete-production-93d7` or merged `main` once landed).
+2. `npm ci` then `npm test` and `npm run demo`.
+3. Dry-run: `npx tsx src/cli.ts simulate --input examples/live/recorded-claim-swap.json`
+   then again with `--constrain-arguments`.
+4. MCP: `npm run mcp` and register per
+   https://github.com/kunaldrall29/policywright/blob/cursor/t2-complete-production-93d7/docs/mcp-reference-session.md
+5. Docs: https://policywright.lemmalabs.space
+6. Live verify (read-only, no keys):  
+   `npx tsx src/cli.ts verify --smart-account CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT --context-rule examples/live/context-rule.json`
+
+Application credentials: none (stateless CLI/MCP). Optional install path
+needs a tester-owned testnet G-key in a local gitignored `.env`
+(`STELLAR_SECRET_KEY`) — never share that with SCF staff.
+
+Network: Soroban Testnet only. Product is UNAUDITED until Tranche 3 Audit
+Bank. Explorer vault/token/tx history links are in Additional Verification
+above.
