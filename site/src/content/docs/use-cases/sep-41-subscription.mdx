@@ -1,0 +1,28 @@
+---
+title: SEP-41 subscription (concept)
+description: Capability shipped for SEP-41 recording; full subscription walkthrough Planned.
+---
+
+import StatusBadge from '../../../components/StatusBadge.astro';
+
+<StatusBadge
+  status="in-development"
+  proofHref="https://github.com/kunal-drall/policywright/blob/main/src/sources/decode.ts"
+  proofLabel="SEP-41 decode"
+/>
+
+**Capability: Shipped** — the recorder decodes CAP-67 / SEP-41 token events
+(`transfer`, SAC `mint`/`burn`/`clawback`) into `AssetFlow`s and can bind
+scope to the observed `(contract, fn)` pairs
+([`src/sources/`](https://github.com/kunal-drall/policywright/tree/main/src/sources),
+[FACTS.md §3](https://github.com/kunal-drall/policywright/blob/main/docs/FACTS.md)).
+
+**Walkthrough: Planned (T3)** — a documented end-to-end “subscription-style”
+recurring SEP-41 transfer narrative (packaged demo + human session) is **not**
+claimed here. Tranche 3 lists three production walkthroughs as Planned only
+([Roadmap](/roadmap/)).
+
+Until that walkthrough lands, treat this page as a **concept brief**: use the
+same record → synthesize → simulate → human-signed install path proven on the
+[agent yield](/use-cases/agent-yield-operations/) example, scoped to whatever
+SEP-41 transfers your recording actually contains — nothing broader.

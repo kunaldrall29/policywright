@@ -5,7 +5,11 @@ description: The three policy kinds Policywright synthesizes in v0, and the OZ f
 
 import StatusBadge from '../../../components/StatusBadge.astro';
 
-<StatusBadge status="shipped" />
+<StatusBadge
+  status="shipped"
+  proofHref="https://github.com/kunal-drall/policywright/blob/main/src/synthesizer.ts"
+  proofLabel="synthesizer.ts"
+/>
 
 Policies are the enforcement half of the synthesized spec: quantitative
 constraints bound to the [context rule](/concepts/context-rules/). v0
@@ -63,8 +67,8 @@ observed route touched. The observation is **always** recorded on the spec (as
 - **`--constrain-arguments` on** — enforced. The same candidate is **denied**.
 
 It constrains the token _set_, not the ordering, hop count, or amounts — amount
-bounds are the spending limit's job
-([README: argument-level scope](https://github.com/kunal-drall/policywright#argument-level-scope---constrain-arguments)).
+bounds are the spending limit's job. Live dual reports:
+[Dry-run & argument scope](/guides/argument-scope/).
 
 ## The five-policy budget
 

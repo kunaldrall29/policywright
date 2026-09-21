@@ -6,31 +6,34 @@ links, paths, and hashes.
 Every row is checkable without trusting this document. Where a claim cannot be
 verified from the repository, it says so instead of claiming completion.
 
-**Scope note.** This is Tranche 1. All four T1 deliverables (D1.1–D1.4 below)
-are delivered as of 2026-08-03; formal tranche review by SCF delegates is
-pending, and later-tranche items are listed under
-[Not yet delivered](#not-yet-delivered). Since D1.3 exactly one real testnet
-deployment exists — the generated frequency-limit policy contract (see
-[Deployment log](#deployment-log)). Every address inside the committed fixture
-remains synthetic ([FACTS.md §5](../docs/FACTS.md)).
+**Scope note.** Tranche 1 (D1.1–D1.4) delivered 2026-08-03. Tranche 2
+(D2.1–D2.5 below) shipped on branch `cursor/t2-complete-production-93d7`
+(2026-09-16) with three human-recording blockers called out in each section.
+Since D1.3 a generated frequency-limit policy is on testnet; since D2.5 a
+smart account holds installed rules (see [Deployment log](#deployment-log)).
+Fixture addresses remain synthetic ([FACTS.md §5](../docs/FACTS.md)).
+
+**Award provenance (verbatim):** Built in response to the SCF 'OZ accounts
+policy builder' RFP (Q2 2026), funded in round SCF #44 as the awarded
+submission 'Record-to-Policy MCP + Agent skill.'
 
 **Where the completion criteria come from.** The public SCF project page
 ([SCF #44 — "Record-to-Policy MCP + Agent skill"](https://communityfund.stellar.org/project/policywright-j8x),
-checked 2026-08-03) shows the award but does not expose per-deliverable
-completion criteria. The "Criterion" line under each D1.x below therefore
-quotes the funded tranche plan as recorded in this repository (the T1
+re-checked 2026-09-16) shows the award but does not expose per-deliverable
+completion criteria. The "Criterion" line under each D1.x / D2.x therefore
+quotes the funded tranche plan as recorded in this repository (the
 deliverable list in the [README](../README.md#deliverables) and
 [roadmap](https://policywright.lemmalabs.space/roadmap/)) — it is not a quote
 of hidden portal text.
 
-Last updated 2026-08-03.
+Last updated 2026-09-16.
 
 ---
 
 ## How to verify everything at once
 
 ```bash
-git clone https://github.com/kunal-drall/policywright && cd policywright
+git clone https://github.com/kunaldrall29/policywright && cd policywright
 npm ci
 npm run lint && npm run format:check && npm run typecheck && npm test && npm run demo
 (cd contracts && cargo test --locked)   # Rust policy crate; toolchain per contracts/rust-toolchain.toml
@@ -295,7 +298,7 @@ pack that makes review trivial.
 **How a reviewer verifies it end to end (no secrets needed):**
 
 ```bash
-git clone https://github.com/kunal-drall/policywright && cd policywright
+git clone https://github.com/kunaldrall29/policywright && cd policywright
 head -3 LICENSE                                       # MIT License
 npm ci
 npm run lint && npm run format:check && npm run typecheck && npm test   # 90 tests
@@ -449,21 +452,221 @@ delivered status with test references.
 
 ---
 
+## Tranche 2 — D2.1–D2.5
+
+Verified this session **2026-09-16** on branch
+`cursor/t2-complete-production-93d7`. Keep T1 history above; these sections
+are additive.
+
+Reality-check gate: [REALITY-CHECK.md](./REALITY-CHECK.md) — S1/S2/S6 PASS;
+S3 BLOCKED-honest (AuthPayload invoke-through-account); S4/S5 human
+recordings outstanding. Sample-vault generality artefacts (S2):
+[examples/sample-vault/](../examples/sample-vault/) (token
+`CCQWXNKS…`, vault `CDEYULOA…`, deposit
+[`e1461011…`](https://stellar.expert/explorer/testnet/tx/e14610110c2cd5f760455664c66e96cb1cfc9093f81c21353eff0a4976f623b0),
+withdraw
+[`3d0113ff…`](https://stellar.expert/explorer/testnet/tx/3d0113ff3cf56773f8064f100d14c9e3d785e19c4a0d588bb4ea5ba6ceda2322)).
+
+---
+
+### D2.1 — MCP server
+
+**Criterion (approved, verbatim):** "The server runs locally and an agent
+calls each tool end to end; a reference session is recorded."
+
+**What shipped.** Stdio MCP server exposing exactly four tools —
+`record` / `synthesize` / `simulate` / `verify` — wrapping the shared
+pipeline. No install/deploy tool (permanent code-first rule).
+
+| Item             | Path / command                                                                                           |
+| ---------------- | -------------------------------------------------------------------------------------------------------- |
+| Server entry     | [src/mcp/server.ts](../src/mcp/server.ts)                                                                |
+| Start            | `npm run mcp` (or `node dist/mcp/server.js` after `npm run build`)                                       |
+| Stdio tests      | [test/mcp-stdio.test.ts](../test/mcp-stdio.test.ts) — included in `npm test` (8 tests, green 2026-09-16) |
+| Docs             | [docs/mcp-server.md](../docs/mcp-server.md), [docs/mcp-determinism.md](../docs/mcp-determinism.md)       |
+| Reference script | [docs/mcp-reference-session.md](../docs/mcp-reference-session.md)                                        |
+| SDK              | `@modelcontextprotocol/sdk` **1.30.0** (lockfile)                                                        |
+
+**Reviewer verification**
+
+```bash
+git clone https://github.com/kunaldrall29/policywright && cd policywright
+npm ci
+npm test -- test/mcp-stdio.test.ts   # spawns stdio; calls all four tools
+npm run mcp                          # leave running; register in Claude Desktop/Code per docs/mcp-reference-session.md
+```
+
+Confirm tool list length === 4 and names are exactly `record`, `synthesize`,
+`simulate`, `verify`.
+
+**Recording (2026-09-17):** stdio reference session with all four tools —
+[evidence/sessions/mcp-reference-session-latest.md](./sessions/mcp-reference-session-latest.md)
+(script: `scripts/mcp-reference-session.ts`; see
+[docs/mcp-reference-session.md](../docs/mcp-reference-session.md)). Criterion
+recording clause closed by the committed transcript; optional human agent-UI
+screen capture remains video polish only.
+
+---
+
+### D2.2 — Claude skill
+
+**Criterion (approved, verbatim):** "Skill packaged; a demo shows 'grant
+permission to do X from this transaction' producing a reviewed policy."
+
+**What shipped.** Packaged Agent Skill at
+[skills/policywright/SKILL.md](../skills/policywright/SKILL.md) (YAML
+`name` + `description` frontmatter per
+[agentskills.io](https://agentskills.io/specification) / platform.claude.com).
+Demo conversation + expected tool calls:
+[docs/skill-demo-script.md](../docs/skill-demo-script.md). Guardrails: no MCP
+install tool; always `simulate` before install talk; UNAUDITED banner;
+clarification on cap / lifetime / argument constraints.
+
+**Reviewer verification**
+
+1. Open [skills/policywright/SKILL.md](../skills/policywright/SKILL.md) —
+   frontmatter validates; non-negotiables forbid agent install.
+2. Walk [docs/skill-demo-script.md](../docs/skill-demo-script.md) against a
+   registered MCP server (`npm run mcp`).
+3. Confirm turn table hits four tools + at least one clarification + install
+   refused as an agent action.
+
+**Recording (2026-09-17):** skill demo conversation + real tool I/O —
+[evidence/sessions/skill-demo-conversation-2026-09-17.md](./sessions/skill-demo-conversation-2026-09-17.md)
+(see [docs/skill-demo-script.md](../docs/skill-demo-script.md)). Pass criteria
+met in-artefact; optional human agent-UI capture remains video polish only.
+
+---
+
+### D2.3 — Dry-run harness + argument-level scope
+
+**Criterion (approved, verbatim):** "The harness outputs a permit/deny/flag
+report for a generated policy including an argument-constrained case
+(BLND→XLM denied when enabled); tests green."
+
+**What shipped.** Dual live reports against
+`examples/live/recorded-claim-swap.json`:
+
+| Mode                        | Committed report                                                                                            | BLND→XLM row                  |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `--constrain-arguments` off | [examples/live/simulation-report-args-off.md](../examples/live/simulation-report-args-off.md) (`1def29f7…`) | ⚠️ flag (advisory)            |
+| `--constrain-arguments` on  | [examples/live/simulation-report-args-on.md](../examples/live/simulation-report-args-on.md) (`10ec9cc7…`)   | ⛔ deny (argument-constraint) |
+
+Derivation rules + limits: [docs/argument-scope.md](../docs/argument-scope.md).
+Harness: [src/simulate.ts](../src/simulate.ts).
+
+**Reviewer verification** (captured green 2026-09-16):
+
+```bash
+npx tsx src/cli.ts simulate --input examples/live/recorded-claim-swap.json
+npx tsx src/cli.ts simulate --input examples/live/recorded-claim-swap.json --constrain-arguments
+npm test   # 126 tests green including simulate + synthesizer argument-scope cases
+```
+
+Hold on the BLND→XLM pair: flag when off, deny when on. Criterion is
+literally reproducible from those commands + the committed reports.
+
+---
+
+### D2.4 — Compose + generate (storage segregation)
+
+**Criterion (approved, verbatim):** "Generates both a composed-policy
+configuration and a net-new stateful policy contract; both compile and pass
+simulation."
+
+**What shipped.**
+
+| Artefact                         | Proof                                                                                                                                                                                          |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Composed stock `spending_limit`  | [examples/live/context-rule.json](../examples/live/context-rule.json) rule `pw:xfer:native` (OZ v0.7.2 citation in `paramsSource`)                                                             |
+| Generated `FrequencyLimitPolicy` | [contracts/frequency-limit-policy](../contracts/frequency-limit-policy) — storage keyed by `(smart_account, context_rule_id)`                                                                  |
+| Dual-harness report              | [examples/live/simulation-report-compose-and-generate.md](../examples/live/simulation-report-compose-and-generate.md)                                                                          |
+| Decision boundary tests          | [test/compose-boundary.test.ts](../test/compose-boundary.test.ts)                                                                                                                              |
+| Docs                             | [docs/compose-vs-generate.md](../docs/compose-vs-generate.md)                                                                                                                                  |
+| On-chain instance                | [`CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP`](https://stellar.expert/explorer/testnet/contract/CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP) — wasm `42227f2b…6eed` |
+
+**Reviewer verification**
+
+```bash
+npm test -- test/compose-boundary.test.ts test/rust-policy.test.ts
+(cd contracts && cargo test --locked)
+npx tsx src/cli.ts synth --input examples/live/recorded-claim-swap.json
+# inspect context-rule.json: stock spending_limit + custom FrequencyLimitPolicy
+```
+
+Both compile and the dual simulation report shows permit / over-cap deny
+(composed) / frequency deny (generated).
+
+---
+
+### D2.5 — Wallet / smart-account install
+
+**Criterion (approved, verbatim):** "A testnet smart account with an installed
+generated policy; end-to-end demo recorded."
+
+**What shipped (fallback path; cohort-wallet track remains open).** Local-signer
+fallback (FACTS §5.3): preferred path is Freighter `signAuthEntry` via
+stellar-wallets-kit; headless CLI uses labeled local ed25519 from `.env`.
+
+| Artefact                 | Value / link                                                                                                                                                                      |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Smart account            | [`CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT`](https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT)           |
+| Deploy SA                | [`8beb1d4cb94b40a318326c0b056509177ff7c4de33caf7ac28c2ed01c652ac32`](https://stellar.expert/explorer/testnet/tx/8beb1d4cb94b40a318326c0b056509177ff7c4de33caf7ac28c2ed01c652ac32) |
+| FrequencyLimitPolicy     | [`CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP`](https://stellar.expert/explorer/testnet/contract/CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP)           |
+| Spending-limit wrapper   | [`CC4KFQ7SIFVW45FDZ6NSKB4NETCE25CDLXIWK2GTQRT52KZUQESVTFTM`](https://stellar.expert/explorer/testnet/contract/CC4KFQ7SIFVW45FDZ6NSKB4NETCE25CDLXIWK2GTQRT52KZUQESVTFTM)           |
+| Install `pw:swap`        | [`5907ecbf76be7738fc1468dbfb4023a4833fe63a011dbe73b85268ce9b6fe8da`](https://stellar.expert/explorer/testnet/tx/5907ecbf76be7738fc1468dbfb4023a4833fe63a011dbe73b85268ce9b6fe8da) |
+| Install `pw:harvest`     | [`589faaad0a4ff19fed88b5fe9714f21d930b4b541b9b24469d34868bb54b30aa`](https://stellar.expert/explorer/testnet/tx/589faaad0a4ff19fed88b5fe9714f21d930b4b541b9b24469d34868bb54b30aa) |
+| Install `pw:xfer:native` | [`36791fe400463f32654ed8b003c7d7c776e5fe9775bc3631ff835e1a41a44654`](https://stellar.expert/explorer/testnet/tx/36791fe400463f32654ed8b003c7d7c776e5fe9775bc3631ff835e1a41a44654) |
+| Live verify              | green — `npm run cli -- verify --smart-account CAXBVHXP… --context-rule examples/live/context-rule.json` (re-run 2026-09-16)                                                      |
+| Install docs             | [docs/smart-account-install.md](../docs/smart-account-install.md)                                                                                                                 |
+| Addresses index          | [evidence/demo-addresses.md](./demo-addresses.md)                                                                                                                                 |
+
+**Reviewer verification**
+
+```bash
+npm run cli -- verify --smart-account CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT \
+  --context-rule examples/live/context-rule.json
+# expect: verify ok — 3 context rule(s) match on-chain snapshot (live CAXBVHXP…)
+```
+
+Open the three install txs + SA contract on stellar.expert (HTTP 200 verified
+2026-09-16).
+
+**Reality-check verdict:** [REALITY-CHECK.md](./REALITY-CHECK.md) — S3 chain
+enforcement through C-account is **BLOCKED-honest** (AuthPayload /
+stellar-cli cannot sign nested `__check_auth`); install+verify path is green
+via local-signer fallback.
+
+**Freighter preferred path (2026-09-17):** extension installed + wallet
+imported; page bridge/`isConnected` failed for unpacked Freighter 5.48 —
+[evidence/freighter/SESSION-2026-09-17.md](./freighter/SESSION-2026-09-17.md).
+Local-signer install+verify remains green (incl. Freighter-linked
+`CALCGK5…` this session). **Demo video (narrated):** primary cut
+[evidence/demo/t2-demo-complete-with-audio.mp4](./demo/t2-demo-complete-with-audio.mp4);
+live CLI/docs companion
+[evidence/demo/t2-demo-live-cli-docs-with-audio.mp4](./demo/t2-demo-live-cli-docs-with-audio.mp4).
+SCF form paste remains human (`TRANCHE2-FORM.md`). Cohort-wallet track → T3.
+
+---
+
 ## Not yet delivered
 
 Stated plainly so no reviewer has to infer it.
 
-| Item                                            | Tranche | Status                                           |
-| ----------------------------------------------- | ------- | ------------------------------------------------ |
-| Simulated-transaction recording path            | T1      | **Delivered** (D1.1, 2026-08-03)                 |
-| Compile the generated policy                    | T1      | **Delivered** (D1.3, 2026-08-03)                 |
-| Deploy a generated policy to testnet            | T1      | **Delivered** (D1.3, 2026-08-03)                 |
-| Resolve `valid_until` ledger-sequence mismatch  | T1      | **Delivered** (D1.2, 2026-08-03)                 |
-| Resolve context-rule scope granularity          | T1      | **Delivered** (D1.2, 2026-08-03)                 |
-| MCP server, Claude skill, wallet integration    | T2      | Not started ([T2-NOTES.md](../docs/T2-NOTES.md)) |
-| Net-new policy codegen with storage segregation | T2      | Not started                                      |
-| Argument-level scope                            | T2      | Landed early, off by default                     |
-| Audit, mainnet, OZ validation, walkthroughs     | T3      | Not started                                      |
+| Item                                                       | Tranche | Status                                                                      |
+| ---------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
+| Simulated-transaction recording path                       | T1      | **Delivered** (D1.1, 2026-08-03)                                            |
+| Compile the generated policy                               | T1      | **Delivered** (D1.3, 2026-08-03)                                            |
+| Deploy a generated policy to testnet                       | T1      | **Delivered** (D1.3, 2026-08-03)                                            |
+| Resolve `valid_until` ledger-sequence mismatch             | T1      | **Delivered** (D1.2, 2026-08-03)                                            |
+| Resolve context-rule scope granularity                     | T1      | **Delivered** (D1.2, 2026-08-03)                                            |
+| MCP server (4 tools) + stdio tests                         | T2      | **Delivered** — D2.1 + recorded stdio session                               |
+| Claude skill packaged                                      | T2      | **Delivered** — D2.2 + recorded skill conversation                          |
+| Dry-run + argument-level scope                             | T2      | **Delivered** — D2.3                                                        |
+| Net-new policy codegen with storage segregation            | T2      | **Delivered** — D2.4                                                        |
+| Wallet / testnet smart-account install (local-signer path) | T2      | **Delivered** — D2.5 fallback; Freighter preferred **BLOCKED-honest**       |
+| End-to-end demo video                                      | T2      | **Delivered** — narrated cuts in [evidence/demo/](./demo/)                  |
+| Audit, mainnet, OZ validation, walkthroughs                | T3      | Not started                                                                 |
 
 ---
 
@@ -492,6 +695,8 @@ with no credentials at all.
 | 2026-08-03 | D1.3 delivered: the generated policy as a compiled crate against the real OZ `Policy` trait (25 Rust tests; emitter byte-equality locked in CI), reproducible wasm build, and a hash-verified testnet deployment (`CDSVPSTS…2ZPP`); deploy script + deployment log added; FACTS §1.4–1.6 and §5 record the toolchain, CLI-surface, and deployment facts.                                                                                                                   |
 | 2026-08-03 | D1.2 delivered: versioned `context-rule.json` (schema v1) with installable OZ rules and real stock `spending_limit` params, emitted and committed for the real recorded sequence; field-by-field install-signature cross-check kept as a CI test; 28 new network-free tests (86 total). Closed the §4.1/§4.2 divergences.                                                                                                                                                  |
 | 2026-08-03 | D1.4 delivered: license switched Apache-2.0 → MIT per the funded plan; CI gains Rust caching and a pinned stellar-cli wasm build with hash reporting; README corrected (SCF #44 / "Record-to-Policy MCP + Agent skill" — the #43 / "OZ accounts policy builder" attribution was wrong — and the CI badge now points at this repo); completion criteria recorded per D1.x; demo script with really-executed expected outputs; `.env.example`, CONTRIBUTING.md, repo topics. |
+| 2026-09-17 | T2 blockers clearance: MCP + skill sessions committed; docs site redeployed to production (`policywright.lemmalabs.space`); Freighter preferred path documented BLOCKED-honest; fresh sample-vault hashes; partial demo capture.
+| 2026-09-16 | T2 D2.1–D2.5 evidence sections added (MCP four-tool stdio, Claude skill, dual argument-scope reports, compose+generate, testnet SA install + live verify). Human-recording blockers listed; reality-check + sample-vault S2 linked. Paste-ready form: [TRANCHE2-FORM.md](./TRANCHE2-FORM.md).                                                                                                                                                                              |
 
 ## Deployment log
 
@@ -507,3 +712,33 @@ every row is re-checkable against the testnet explorer links.
 | Upload tx                                     | (wasm already on-chain; no upload tx)                                                                                                                                             |
 | Deploy tx                                     | [`35ddaeaa935af7233dbee577942edfcea2abda1ab12c1cd37d51b4c432236af0`](https://stellar.expert/explorer/testnet/tx/35ddaeaa935af7233dbee577942edfcea2abda1ab12c1cd37d51b4c432236af0) |
 | Deployer                                      | `GATUKCIMLZTQHNW3IFRNJWJZ5YDT5S2VFSTYMW3EXCKNPYVAYQCKKS3W`                                                                                                                        |
+
+### D2.5 account:create (2026-09-16)
+
+| Field                 | Value                                                                                                       |
+| --------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Smart account (C…)    | `CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT`                                                  |
+| Delegated signer (G…) | `GAFE247TQEPDPTCE7RIHOEXFD5VEGCJIZGLIHPGAITG2BCZ7ATFY4ZLY`                                                  |
+| Network               | testnet                                                                                                     |
+| Deploy tx             | `8beb1d4cb94b40a318326c0b056509177ff7c4de33caf7ac28c2ed01c652ac32`                                          |
+| Explorer (contract)   | https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT   |
+| Explorer (deploy tx)  | https://stellar.expert/explorer/testnet/tx/8beb1d4cb94b40a318326c0b056509177ff7c4de33caf7ac28c2ed01c652ac32 |
+| Wasm                  | `/workspace/contracts/target/wasm32v1-none/release/oz_smart_account.wasm`                                   |
+| Wasm hash             | `413b22531042f9b2588c5cb211c1df2845615fc42a2bcee61190392318b7c578`                                          |
+| Source                | `npm run cli -- account:create` (local-signer / stellar-cli)                                                |
+
+Also see [demo-addresses.md](./demo-addresses.md) for the live C-address list.
+
+### D2.5 install + live verify (2026-09-16)
+
+| Field                    | Value                                                                                                                                     |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Smart account            | `CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT`                                                                                |
+| Spending-limit wrapper   | `CC4KFQ7SIFVW45FDZ6NSKB4NETCE25CDLXIWK2GTQRT52KZUQESVTFTM` (deploy tx `b1770755c136c504c536d8d129c8504aec3c9ec03a29275d0341d0f488d5c872`) |
+| FrequencyLimitPolicy     | `CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP` (pre-existing)                                                                 |
+| Install `pw:swap`        | [`5907ecbf…e8da`](https://stellar.expert/explorer/testnet/tx/5907ecbf76be7738fc1468dbfb4023a4833fe63a011dbe73b85268ce9b6fe8da)            |
+| Install `pw:harvest`     | [`589faaad…30aa`](https://stellar.expert/explorer/testnet/tx/589faaad0a4ff19fed88b5fe9714f21d930b4b541b9b24469d34868bb54b30aa)            |
+| Install `pw:xfer:native` | [`36791fe4…4654`](https://stellar.expert/explorer/testnet/tx/36791fe400463f32654ed8b003c7d7c776e5fe9775bc3631ff835e1a41a44654)            |
+| Live verify              | green — 3 CallContract rules                                                                                                              |
+| Signing                  | local-signer fallback (OZ Delegated AuthPayload); Freighter preferred when available                                                      |
+| Source                   | `examples/live/context-rule.json` emitter output unmodified (ScVal wire encoding only)                                                    |

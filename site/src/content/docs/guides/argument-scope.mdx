@@ -1,0 +1,53 @@
+---
+title: Dry-run & argument scope
+description: Flag vs deny for unobserved swap routes — BLND→XLM on the live sequence.
+---
+
+import StatusBadge from '../../../components/StatusBadge.astro';
+
+<StatusBadge
+  status="shipped"
+  proofHref="https://github.com/kunal-drall/policywright/blob/main/docs/argument-scope.md"
+  proofLabel="docs/argument-scope.md"
+/>
+
+Full derivation rules and limits:
+[docs/argument-scope.md](https://github.com/kunal-drall/policywright/blob/main/docs/argument-scope.md).
+
+## Two modes
+
+| Mode | Flag | Unobserved swap route | Observed route |
+| ---- | ---- | --------------------- | -------------- |
+| Default | omit / off | **flag** (advisory) | **permit** |
+| Tightened | `--constrain-arguments` | **deny** | **permit** |
+
+The synthesizer **always** records `argumentScopes`. Only when the flag is on
+are they copied into enforced `argument-constraint` policies.
+
+## Criterion case: BLND→XLM
+
+Against the live recording
+([`examples/live/recorded-claim-swap.json`](https://github.com/kunal-drall/policywright/blob/main/examples/live/recorded-claim-swap.json))
+the observed swap path is **XLM → USDC**. The harness includes a labeled
+**BLND→XLM (unobserved route)** scenario using real FACTS testnet IDs:
+
+- BLND: `CB22KRA3YZVCNCQI64JQ5WE7UY2VAV7WFLK6A2JN3HEX56T2EDAFO7QF`
+- XLM/native: `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`
+
+| Report | BLND→XLM decision | Link |
+| ------ | ----------------- | ---- |
+| Args off | ⚠️ **flag** | [`simulation-report-args-off.md`](https://github.com/kunal-drall/policywright/blob/main/examples/live/simulation-report-args-off.md) |
+| Args on | ⛔ **deny** | [`simulation-report-args-on.md`](https://github.com/kunal-drall/policywright/blob/main/examples/live/simulation-report-args-on.md) |
+
+Reproduce:
+
+```bash
+npm run --silent cli -- simulate --input examples/live/recorded-claim-swap.json
+npm run --silent cli -- simulate --input examples/live/recorded-claim-swap.json --constrain-arguments
+```
+
+## Honest limits
+
+Argument scope constrains the **set of token addresses** on a swap `path` —
+not ordering, hop count, amounts, or non-swap functions. Offline dry-run only
+today; no stock OZ policy expresses this on-chain yet.

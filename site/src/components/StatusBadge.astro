@@ -1,20 +1,34 @@
 ---
 /**
  * Page status badge. Every docs page renders one of:
- * Shipped (exists in this repo, verifiable) / In development / Planned.
+ * Shipped / Shipped (testnet) / In development / Planned.
+ * Every Shipped* badge should include a proofHref to a verifiable artefact.
  */
 interface Props {
-  status: 'shipped' | 'in-development' | 'planned';
+  status: 'shipped' | 'shipped-testnet' | 'in-development' | 'planned';
+  /** Required in spirit for shipped*: link to repo / explorer / evidence. */
+  proofHref?: string;
+  proofLabel?: string;
 }
-const { status } = Astro.props;
+const { status, proofHref, proofLabel = 'proof' } = Astro.props;
 const labels = {
   shipped: 'Shipped',
+  'shipped-testnet': 'Shipped (testnet)',
   'in-development': 'In development',
   planned: 'Planned',
 } as const;
+const cssStatus = status === 'shipped-testnet' ? 'shipped' : status;
 ---
 
-<p class={`pw-status pw-status--${status}`}>
+<p class={`pw-status pw-status--${cssStatus}`}>
   <span class="pw-status-dot" aria-hidden="true"></span>
   Status: {labels[status]}
+  {
+    proofHref && (
+      <>
+        {' '}
+        — <a href={proofHref}>{proofLabel}</a>
+      </>
+    )
+  }
 </p>

@@ -1,0 +1,13 @@
+In Tranche 1 this worked from the command line. In Tranche 2, an agent can use it, a human still signs, and the chain enforces what was granted.
+
+This is Policywright — Record-to-Policy MCP and Agent skill — funded in SCF round forty-four.
+
+Beat one. The agent asks. From the Claude skill, we grant the tightest permission to repeat our Blend claim to Soroswap swap, from the recorded claim-swap transaction. The MCP tools fire: synthesize the flow, clarify the spend cap and lifetime, then surface the unaudited banner. There is no install tool on the agent. The agent recorded the flow, asked before widening the grant, and showed the unaudited banner before anyone signed.
+
+Beat two. Prove it is not too loose. We dry-run the same recorded flow. Replay is permitted. Over the spend cap is denied. An unobserved route is only a flag until argument constraints are on — then BLND to XLM is a deny.
+
+Beat three. What it actually produced. Stock OpenZeppelin spending limit where it can express the constraint; generated Frequency Limit Policy code only where it cannot. The generated Rust is illustrative and unaudited — a starting point, not deploy-ready.
+
+Beat four. Install and human sign. Live verify against the testnet smart account shows three context rules matching on-chain. Install used the labeled local-signer fallback for headless testnet. Freighter remains the preferred interactive path when the browser extension bridge is available. We do not claim chain kill-shot enforcement through the C-account — that AuthPayload path is disclosed as blocked.
+
+Beat five. Proof wall. Evidence maps every approved criterion D2.1 through D2.5 to links and hashes. Reality check: S1, S2, and S6 pass; S3 is honest about the AuthPayload limit. Docs are live at policywright.lemmalabs.space. Repo: github.com/kunaldrall29/policywright. Limits: testnet only; unaudited until the Tranche 3 Audit Bank audit.

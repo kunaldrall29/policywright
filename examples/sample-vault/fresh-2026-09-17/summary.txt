@@ -1,0 +1,40 @@
+policywright — synthesized smart-account authorization
+======================================================
+
+Source tx : af094330a3f86a500679fc011a847c000e5a6018c83a73c429496f54ee532445
+Network   : testnet (recorded from rpc)
+
+Observed flow
+-------------
+  call deposit @ CCJSSLAEVUEE2G5MEPGTN4C4RZKC3QMERU2VWUHET6DFQ6BPEYXW5MET
+  call withdraw @ CCJSSLAEVUEE2G5MEPGTN4C4RZKC3QMERU2VWUHET6DFQ6BPEYXW5MET
+  out  1 CDOEGWQSTV4FEY344WTANJKH7OWSOCIBOIAF2N5EHKS7RO33XMKX5TD7 (unresolved)
+  in   0.4 CDOEGWQSTV4FEY344WTANJKH7OWSOCIBOIAF2N5EHKS7RO33XMKX5TD7 (unresolved)
+
+Context rule
+------------
+  name        : pw:deposit+withdraw
+  valid until : 1792204387 (unix)
+  scope       :
+    - deposit @ CCJSSLAEVUEE2G5MEPGTN4C4RZKC3QMERU2VWUHET6DFQ6BPEYXW5MET
+    - withdraw @ CCJSSLAEVUEE2G5MEPGTN4C4RZKC3QMERU2VWUHET6DFQ6BPEYXW5MET
+
+Policies (2)
+--------
+  - spending-limit: CDOEGWQSTV4FEY344WTANJKH7OWSOCIBOIAF2N5EHKS7RO33XMKX5TD7 (unresolved) <= 1.1 per 86400s (observed gross out 1)
+  - frequency-limit: <= 5 call(s) per 86400s
+
+Installable OZ context rules (2) — see context-rule.json
+----------------------------
+  pw:deposit+withdraw  CallContract(CCJSSLAEVUEE2G5MEPGTN4C4RZKC3QMERU2VWUHET6DFQ6BPEYXW5MET)
+    valid until ledger 5236160; observed fns: deposit, withdraw
+    - custom:FrequencyLimitPolicy { window_secs: 86400, max_calls: 5 }
+  pw:xfer:CDOEGWQS  CallContract(CDOEGWQSTV4FEY344WTANJKH7OWSOCIBOIAF2N5EHKS7RO33XMKX5TD7)
+    valid until ledger 5236160; observed fns: transfer
+    - stock:spending_limit { spending_limit: 11000000, period_ledgers: 17280 } (caps CDOEGWQSTV4FEY344WTANJKH7OWSOCIBOIAF2N5EHKS7RO33XMKX5TD7 (unresolved) transfers)
+
+  5 composition note(s) in context-rule.json (unit conversions,
+  deltas the stock policies cannot express).
+
+Note: the generated FrequencyLimitPolicy Rust is ILLUSTRATIVE and
+UNAUDITED — a starting point, not deploy-ready code.

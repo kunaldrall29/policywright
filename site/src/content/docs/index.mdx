@@ -1,105 +1,86 @@
 ---
 title: Overview
-description: What Policywright is, what exists in v0, and where the project is headed.
+description: What Policywright is today on testnet — record to least-privilege OZ authorization, agent tools, and human-signed install.
 ---
 
 import StatusBadge from '../../components/StatusBadge.astro';
 
-<StatusBadge status="in-development" />
+<StatusBadge
+  status="shipped-testnet"
+  proofHref="https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT"
+  proofLabel="live smart account"
+/>
 
-Policywright turns a transaction a user has already performed (or simulated) on
-Stellar/Soroban into the **least-privilege
+Policywright turns a Stellar/Soroban transaction a user has already performed
+(or simulated) into the least-privilege
 [OpenZeppelin smart-account](https://docs.openzeppelin.com/stellar-contracts/accounts/smart-account)
-authorization** that permits exactly that flow — a context rule plus the minimum
-set of policies — and lets them verify it with a dry-run before anything is
-installed on-chain.
-
-The project is **in development**. This site documents version 0
-(`0.1.0` in [package.json](https://github.com/kunal-drall/policywright/blob/main/package.json)),
-an offline-first pipeline you can run today, and the roadmap for what comes next.
+authorization that permits exactly that flow — context rules plus the minimum
+policy set — then dry-runs it and reconciles against chain (or a fixture)
+before a **human-signed, testnet-only** install. Built in response to the SCF
+'OZ accounts policy builder' RFP (Q2 2026), funded in round SCF #44 as the
+awarded submission 'Record-to-Policy MCP + Agent skill.' Proof today: live
+testnet smart account
+[`CAXBVHXP…`](https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT)
+with installed rules, frequency policy
+[`CDSVPSTS…`](https://stellar.expert/explorer/testnet/contract/CDSVPSTSKMJ2EEP4FOJ3NNIJZY5DKVA3VV5BM453AOYIWCLD4NMG2ZPP),
+committed live artefacts under
+[`examples/live/`](https://github.com/kunal-drall/policywright/tree/main/examples/live),
+stdio MCP
+([`docs/mcp-server.md`](https://github.com/kunal-drall/policywright/blob/main/docs/mcp-server.md)),
+and the Claude skill
+([`skills/policywright/`](https://github.com/kunal-drall/policywright/tree/main/skills/policywright))
+— see [evidence/EVIDENCE.md](https://github.com/kunal-drall/policywright/blob/main/evidence/EVIDENCE.md)
+and the [Roadmap](/roadmap/).
 
 ## The pipeline
 
-1. **Record** — capture a transaction as a normalised `RecordedTx`: the scoped
-   contract calls and the token in/out flows. Sourced from a committed offline
-   fixture or, on demand, from a live Soroban RPC node by transaction hash.
-2. **Synthesize** — derive a least-privilege `SmartAccountSpec`: a context rule
-   scoped to the exact `(contract, function)` pairs observed, a gross-outflow
-   spending cap per asset that left the account, no cap for assets that only
-   flowed in, and an always-on frequency limit.
-3. **Emit** — render the spec as machine-readable JSON (`spec.json` plus
-   installable `context-rule.json`), a human-readable summary, and an
-   _illustrative_ custom Rust policy — the same source as the compiled-and-tested
-   crate in `contracts/`.
-4. **Simulate** — dry-run candidate calls against the spec and report whether
-   each would be permitted, denied, or flagged — and why — before anything is
-   installed.
+1. **Record** — capture a transaction as a normalised `RecordedTx` (fixture,
+   live RPC hashes, or saved `simulateTransaction`).
+2. **Synthesize / emit** — least-privilege `SmartAccountSpec` → `spec.json`,
+   installable `context-rule.json`, summary, and stamped illustrative Rust.
+3. **Simulate** — dry-run permit / deny / flag before anything is installed.
+4. **Verify** — diff emitted rules against an on-chain snapshot or live SA.
+5. **Install (CLI, human-signed, testnet only)** — not an MCP tool; Freighter
+   preferred, local-signer fallback labeled —
+   [Smart-account install](/guides/smart-account-install/).
 
-See [Architecture](/architecture/) for the design in depth, and
-[Getting Started](/getting-started/) to run it.
+Agents reach steps 1–4 via the [MCP server](/reference/mcp-tools/) and
+[Claude skill](/reference/claude-skill/). See [Architecture](/architecture/)
+and [Getting Started](/getting-started/).
 
-## What exists in v0
+## What ships today
 
-Everything below is in the repository today and runs offline:
+- **Recording + synthesizer + emitter + dry-run** —
+  [`src/`](https://github.com/kunal-drall/policywright/tree/main/src)
+- **MCP (exactly four tools)** — `record` / `synthesize` / `simulate` /
+  `verify`; **no install tool by design** —
+  [`src/mcp/`](https://github.com/kunal-drall/policywright/tree/main/src/mcp)
+- **Claude skill** —
+  [`skills/policywright/SKILL.md`](https://github.com/kunal-drall/policywright/blob/main/skills/policywright/SKILL.md)
+- **Testnet smart-account create + install + live verify** —
+  [`docs/smart-account-install.md`](https://github.com/kunal-drall/policywright/blob/main/docs/smart-account-install.md)
+- **Generated FrequencyLimitPolicy** (illustrative / unaudited) on testnet as
+  `CDSVPSTS…` —
+  [`contracts/frequency-limit-policy`](https://github.com/kunal-drall/policywright/tree/main/contracts/frequency-limit-policy)
 
-- **Recording layer** — offline fixture loader and a live Soroban RPC adapter
-  (`getTransaction` by hash, SEP-41 transfer-event decoding, SAC metadata
-  resolution) —
-  [src/sources/](https://github.com/kunal-drall/policywright/tree/main/src/sources)
-- **Least-privilege synthesizer** — scope binding, gross-outflow spend caps,
-  minimal-permission inflow handling, frequency limits, and config-gated
-  argument-level scope —
-  [src/synthesizer.ts](https://github.com/kunal-drall/policywright/blob/main/src/synthesizer.ts)
-- **Emitter** — `spec.json`, `context-rule.json`, `summary.txt`, and a
-  clearly-stamped illustrative Rust policy —
-  [src/emitter.ts](https://github.com/kunal-drall/policywright/blob/main/src/emitter.ts),
-  [src/rust-policy.ts](https://github.com/kunal-drall/policywright/blob/main/src/rust-policy.ts)
-- **Dry-run simulator** — permit/deny/flag evaluation with auto-generated deny
-  cases —
-  [src/simulate.ts](https://github.com/kunal-drall/policywright/blob/main/src/simulate.ts)
-- **CLI, tests, and CI** — `demo`, `synth`, `simulate`, and `record` commands;
-  a Vitest suite with coverage thresholds; CI configured for pushes to `main`
-  and pull requests, running lint → format → typecheck → test → demo plus a
-  docs-site build and the Rust contracts job (on this fork runs are currently
-  dispatched manually — the cited runs are in
-  [evidence/EVIDENCE.md](https://github.com/kunal-drall/policywright/blob/main/evidence/EVIDENCE.md)) —
-  [src/cli.ts](https://github.com/kunal-drall/policywright/blob/main/src/cli.ts),
-  [test/](https://github.com/kunal-drall/policywright/tree/main/test),
-  [CI workflow](https://github.com/kunal-drall/policywright/actions/workflows/ci.yml)
+Tranche 3 (mainnet walkthroughs, Audit Bank audit, production packaging) is
+**Planned** only — see the [Roadmap](/roadmap/).
 
-The pipeline in `src/` never signs, deploys, or relays transactions, and v0 has
-no MCP server, Claude skill, or wallet integration — those are planned (see the
-[Roadmap](/roadmap/)). The one exception outside the pipeline is the opt-in,
-testnet-only deploy script for the generated policy contract itself
-([scripts/deploy-testnet.sh](https://github.com/kunal-drall/policywright/blob/main/scripts/deploy-testnet.sh),
-evidenced in the deployment log in
-[evidence/EVIDENCE.md](https://github.com/kunal-drall/policywright/blob/main/evidence/EVIDENCE.md)).
+## Worked example
 
-## The worked example and its assets
-
-The worked example throughout this site is a Stellar/Soroban flow: a **Blend**
-pool emissions claim (BLND in) followed by a **Soroswap** exact-input swap of
-that BLND into **USDC** (BLND out, USDC in).
-
-The deterministic test fixture uses **labelled synthetic assets** — well-formed
-but synthetic contract addresses carrying the symbols BLND, XLM, and USDC (the
-[fixture](https://github.com/kunal-drall/policywright/blob/main/fixtures/recorded-tx.json)
-says so in its own note) — and is never presented as real USDC. Live demos are
-planned and not yet published. When live demos are published, they will use the
-Circle-issued USDC asset on Stellar, with the issuer pinned in config and
-verified against Circle's official documentation.
+The live walkthrough is a **Blend** `harvest` + **Soroswap** exact-input swap
+(XLM → USDC) recorded from real testnet txs
+([claim](https://stellar.expert/explorer/testnet/tx/acf256a0688e7f9c36520f4fc20cfa924d1b2e593033d85b0e443ce770b2d452),
+[swap](https://stellar.expert/explorer/testnet/tx/2dcff6618ff12fb629700cab627b3870afa3f0dd000becf88b2eb7826d0b2c1b)),
+committed as
+[`examples/live/recorded-claim-swap.json`](https://github.com/kunal-drall/policywright/blob/main/examples/live/recorded-claim-swap.json).
+The offline fixture under `fixtures/` remains synthetic for CI. Full narrative:
+[Agent yield operations](/use-cases/agent-yield-operations/).
 
 ## Prior art
 
-Policywright extends the prior art of
-[kalepail/pollywallet](https://github.com/kalepail/pollywallet) by Tyler van der
-Hoeven — a passkey-secured smart-wallet demo on Stellar that deploys
-OpenZeppelin smart-account contracts on Soroban. pollywallet shows how to create
-and operate a smart wallet; Policywright adds the step of deriving the
+Policywright extends
+[kalepail/pollywallet](https://github.com/kalepail/pollywallet) by deriving
 least-privilege authorization from a transaction the user already performed,
-plus an offline dry-run to verify it before installing. See the
-[README acknowledgements](https://github.com/kunal-drall/policywright#acknowledgements)
-for the full adopt/extend/replace breakdown.
-
-Policywright is open source under the
+plus an offline dry-run before install. Open source under the
 [MIT license](https://github.com/kunal-drall/policywright/blob/main/LICENSE).

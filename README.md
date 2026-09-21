@@ -1,6 +1,6 @@
 # policywright
 
-[![CI](https://github.com/kunal-drall/policywright/actions/workflows/ci.yml/badge.svg)](https://github.com/kunal-drall/policywright/actions/workflows/ci.yml)
+[![CI](https://github.com/kunaldrall29/policywright/actions/workflows/ci.yml/badge.svg)](https://github.com/kunaldrall29/policywright/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
 Policywright turns a transaction a user already performed (or simulated) into the
@@ -56,6 +56,24 @@ npm run demo
 and runs the dry-run scenarios — asserting each behaves as expected. It exits non-zero if
 any scenario deviates, so it doubles as a smoke test. It needs no network access.
 
+### Install from an `npm pack` tarball
+
+For a dependency install (no clone of this repo as the app root):
+
+```bash
+npm pack                    # writes policywright-0.1.0.tgz (runs `prepack` → build)
+# in another project:
+npm install /path/to/policywright-0.1.0.tgz
+npx policywright synth --input node_modules/policywright/examples/live/recorded-claim-swap.json
+npx policywright simulate --input node_modules/policywright/examples/live/recorded-claim-swap.json
+```
+
+The published `bin` is the compiled CLI (`dist/cli.js`). The golden live sequence
+artefact the Commands table refers to is
+[`examples/live/recorded-claim-swap.json`](examples/live/recorded-claim-swap.json)
+(committed recording — not the offline fixture). Dev scripts (`npm run cli`, etc.)
+still use `tsx` against `src/` and require a full clone + `npm ci`.
+
 ## Commands
 
 | Command                                                                                                      | What it does                                                                                                                                              |
@@ -74,7 +92,9 @@ CAP-67/SEP-41 token events into one merged `RecordedTx`, resolving each token's 
 decimals from its SAC metadata (with an explicit `resolved: false` fallback when that is
 not possible). `--account <G…|C…>` names the subject whose authorizations are scoped;
 `--from-simulation <file>` ingests a saved `simulateTransaction` exchange instead.
-Not-found, failed, wrong-network, and decode failures return clear, actionable errors.
+Not-found, failed, and decode failures return clear, actionable typed errors.
+A hash that exists only on another network surfaces as `TX_NOT_FOUND` with an
+explicit “check the hash is on the right network” hint (not a separate code).
 
 ## Configuration
 
@@ -111,7 +131,9 @@ as `argumentScopes` in the spec). What that observation does depends on the flag
 **Limits.** This constrains the _set of tokens the path may touch_, not the ordering,
 intermediate-hop count, or amounts. A multi-hop route through only-observed tokens is
 allowed; amount bounds are the spending-limit policy's job. It currently covers the swap
-`path` argument only.
+`path` argument only. Full derivation rules, limits, and commands to reproduce the
+committed dual reports on the live claim→swap sequence are in
+[docs/argument-scope.md](docs/argument-scope.md).
 
 ## The generated Rust policy is illustrative
 
@@ -160,7 +182,9 @@ dispatched manually and cited per deliverable in
 | `contracts/`                           | Rust workspace: the compiled-and-tested frequency-limit-policy crate (source of truth for the emitted template). |
 | `scripts/deploy-testnet.sh`            | Testnet-only build + upload + deploy + hash-verify; appends the deployment log to evidence/EVIDENCE.md.          |
 
-See [docs/architecture.md](docs/architecture.md) for the design in depth.
+See [docs/architecture.md](docs/architecture.md) for the design in depth, and
+[docs/compose-vs-generate.md](docs/compose-vs-generate.md) for when the
+synthesizer composes stock OZ policies vs generates `FrequencyLimitPolicy`.
 
 ## Documentation site
 
@@ -199,41 +223,39 @@ CI builds the site on every push and pull request (the `site` job in
 
 ## Deliverables
 
-This project is built for Stellar SCF #44 — the awarded submission
-["Record-to-Policy MCP + Agent skill"](https://communityfund.stellar.org/project/policywright-j8x)
-— against a three-tranche plan. All dates are targets. The table tracks the funded deliverables and
-what is actually verifiable in this repository today — see
-[the roadmap](https://policywright.lemmalabs.space/roadmap/) for the full plan.
+Built in response to the SCF 'OZ accounts policy builder' RFP (Q2 2026), funded
+in round SCF #44 as the awarded submission
+["Record-to-Policy MCP + Agent skill"](https://communityfund.stellar.org/project/policywright-j8x).
+All dates are targets. The table tracks the funded deliverables and what is
+actually verifiable in this repository today — see
+[the roadmap](https://policywright.lemmalabs.space/roadmap/) for the full plan
+and [evidence/EVIDENCE.md](evidence/EVIDENCE.md) for reviewer steps.
 
-| Tranche                    | Target      | Deliverables                                                                                                                          | Status          |
-| -------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| **T1 — MVP (testnet)**     | 31 Aug 2026 | Recording layer (live + simulated); least-privilege synthesizer; generated-policy compile + testnet deploy; open-source CLI + CI      | 🚧 In progress  |
-| **T2 — Testnet expansion** | 15 Oct 2026 | MCP server; Claude skill; dry-run harness + argument-level scope; net-new policy codegen with storage segregation; wallet integration | ⏳ Not started¹ |
-| **T3 — Mainnet launch**    | 30 Nov 2026 | Three end-to-end walkthroughs; OpenZeppelin validation; production release; mainnet demonstration; audit readiness (SCF Audit Bank)   | ⏳ Not started  |
+| Tranche                    | Target      | Deliverables                                                                                                                          | Status                                   |
+| -------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| **T1 — MVP (testnet)**     | 31 Aug 2026 | Recording layer (live + simulated); least-privilege synthesizer; generated-policy compile + testnet deploy; open-source CLI + CI      | ✅ Delivered (D1.1–D1.4)                 |
+| **T2 — Testnet expansion** | 15 Oct 2026 | MCP server; Claude skill; dry-run harness + argument-level scope; net-new policy codegen with storage segregation; wallet integration | 🚧 Shipped code · human recordings open¹ |
+| **T3 — Mainnet launch**    | 30 Nov 2026 | Three end-to-end walkthroughs; OpenZeppelin validation; production release; mainnet demonstration; audit readiness (SCF Audit Bank)   | ⏳ Not started                           |
 
-**Shipped and verifiable today**: the recording layer from the
-offline fixture, from a live Soroban RPC node (multi-hash sequences with authorization
-trees), and from a saved `simulateTransaction` exchange; the synthesizer (exact scope
-binding, gross-outflow spend caps, minimal-permission inflows, frequency limits, and
-installable OZ context rules with real stock-policy install params —
-[docs/context-rule-schema.md](docs/context-rule-schema.md)); the emitter (`spec.json`,
-`context-rule.json`, `summary.txt`, stamped illustrative Rust — the same source as the
-compiled-and-tested crate in [contracts/](contracts/), 25 Rust tests, reproducible wasm
-build per [docs/FACTS.md](docs/FACTS.md) §1.5); the offline dry-run
-harness; the CLI; the Vitest suite with coverage thresholds; and CI. The emitted
-artifacts for a real testnet claim+swap sequence are committed under
-[`examples/live/`](examples/live/).
+**Shipped and verifiable today (T1 + T2 code):** recording layer (fixture /
+live RPC / simulation); synthesizer + emitter; dry-run harness with optional
+`--constrain-arguments`; four-tool MCP stdio server (`npm run mcp`); Claude
+skill (`skills/policywright/`); compose-first stock `spending_limit` +
+generated `FrequencyLimitPolicy`; CLI `account:create` / `install` / live
+`verify`; Vitest + Rust tests + CI. Live artefacts under
+[`examples/live/`](examples/live/). Testnet smart account
+[`CAXBVHXP…`](https://stellar.expert/explorer/testnet/contract/CAXBVHXP4QCWFNWW223JC6DAZHRXDUS5NDRSZMFSEYKCX4C3C5U4ERXT)
+with installed rules — proof trail in
+[evidence/EVIDENCE.md](evidence/EVIDENCE.md) D2.1–D2.5. Demo teleprompter:
+[docs/demo-script-t2.md](docs/demo-script-t2.md). Form paste:
+[evidence/TRANCHE2-FORM.md](evidence/TRANCHE2-FORM.md).
 
-**Delivered late in T1:** the generated policy compiles, passes its Rust test suite, and
-is deployed to testnet — contract ID and hash-verification trail in the deployment log in
-[evidence/EVIDENCE.md](evidence/EVIDENCE.md). The deployed instance is testnet-only and
-unaudited.
-
-¹ One T2 deliverable pair landed early: the offline dry-run harness and its
-config-gated argument-level scope (`--constrain-arguments`, off by default) — the T2 row
-lists "dry-run harness + argument-level scope". The rest of T2 — MCP server, Claude
-skill, storage-segregated codegen, wallet integration — has not been started. See
-[docs/T2-NOTES.md](docs/T2-NOTES.md).
+¹ T2 status detail (2026-09-16): D2.3 dry-run + D2.4 compose/generate
+**COMPLETE-verified**; D2.1 MCP + D2.2 skill + D2.5 install **COMPLETE** for
+code/tests with **BLOCKED-human** remaining for (1) MCP reference session,
+(2) skill demo conversation, (3) Freighter interactive signing + demo video.
+See [docs/t2-state-audit.md](docs/t2-state-audit.md) and
+[evidence/REALITY-CHECK.md](evidence/REALITY-CHECK.md).
 
 ## Acknowledgements
 

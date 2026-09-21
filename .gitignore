@@ -19,3 +19,12 @@ contracts/**/test_snapshots/
 *.log
 .DS_Store
 ._*
+
+# sample-vault build / local flow output
+examples/sample-vault/target/
+examples/sample-vault/out/
+
+# Freighter unpacked extension (local)
+tools/freighter-extension/
+
+wallet/install-plan.json

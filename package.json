@@ -13,6 +13,8 @@
     "synth": "tsx src/cli.ts synth",
     "simulate": "tsx src/cli.ts simulate",
     "record": "tsx src/cli.ts record",
+    "verify": "tsx src/cli.ts verify",
+    "mcp": "tsx src/mcp/server.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -20,9 +22,24 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build"
   },
+  "bin": {
+    "policywright": "./dist/cli.js",
+    "policywright-mcp": "./dist/mcp/server.js"
+  },
+  "files": [
+    "dist",
+    "fixtures",
+    "examples",
+    "docs",
+    "README.md",
+    "LICENSE",
+    ".env.example"
+  ],
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@stellar/stellar-sdk": "15.1.0"
   },
   "devDependencies": {
