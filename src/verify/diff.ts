@@ -367,17 +367,27 @@ function diffPolicies(
         `policy kind mismatch`,
       );
     }
-    if (act.installParams !== undefined) {
-      const expParams = stableJson(exp.installParams);
-      const actParams = stableJson(normalizeParamValue(act.installParams));
-      if (expParams !== actParams) {
+    if (exp.installParams !== undefined) {
+      if (act.installParams === undefined) {
         pushDiff(
           diffs,
           `${path}.policies[${i}].installParams`,
           exp.installParams,
-          act.installParams,
-          `install params mismatch for ${exp.policy}`,
+          null,
+          `install params unverifiable / missing on-chain for ${exp.policy}`,
         );
+      } else {
+        const expParams = stableJson(exp.installParams);
+        const actParams = stableJson(normalizeParamValue(act.installParams));
+        if (expParams !== actParams) {
+          pushDiff(
+            diffs,
+            `${path}.policies[${i}].installParams`,
+            exp.installParams,
+            act.installParams,
+            `install params mismatch for ${exp.policy}`,
+          );
+        }
       }
     }
   }

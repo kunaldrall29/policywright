@@ -11,16 +11,17 @@
       <p class="eyebrow">policywright · testnet install</p>
       <h1>Sign the synthesized rule</h1>
       <p class="lede">
-        Load an install plan from <code>CLI install plan</code>, confirm Freighter is on
+        Load an install plan from the CLI, confirm Freighter is on
         <strong>Testnet</strong>, then approve the popup. policywright never auto-deploys —
-        the human signs.
+        the human signs. MCP never prepares or installs.
       </p>
 
       <section class="panel">
         <h2>1 · Install plan</h2>
         <p class="hint">
-          Paste the JSON from <code>npm run cli -- prepare-install …</code> or the MCP
-          <code>CLI install plan</code> tool.
+          Paste the JSON from
+          <code>npm run cli -- prepare-install --smart-account &lt;C…&gt; --context-rule &lt;file&gt; [--out wallet/install-plan.json]</code>
+          (TESTNET ONLY). There is no MCP prepare/install tool.
         </p>
         <textarea id="plan" spellcheck="false" placeholder="{ &quot;schemaVersion&quot;: 1, … }"></textarea>
         <div class="row">

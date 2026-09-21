@@ -11,6 +11,7 @@
  *   verify               diff emitted context-rule.json vs on-chain snapshot
  *                        (fixture file or live --smart-account fetch)
  *   account:create       deploy OZ smart account on testnet (Delegated signer)
+ *   prepare-install      emit Freighter/local install-plan.json (no submit)
  *   install              add_context_rule from emitted context-rule.json (testnet)
  *
  * synth and simulate accept SynthConfig overrides as flags (see USAGE); any
@@ -18,7 +19,7 @@
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { createSmartAccount } from './account/create.js';
 import {
   DEFAULT_FREQUENCY_POLICY,
@@ -55,6 +56,10 @@ Usage:
                                           live fetch + diff (ignores validUntil drift)
   npm run cli -- account:create [--network testnet]
                                           deploy OZ smart account (TESTNET ONLY)
+  npm run cli -- prepare-install --smart-account <C…> --context-rule <file>
+                 [--frequency-policy <C…>] [--spending-limit-policy <C…>]
+                 [--signer <G…>] [--out <file>] [--network testnet]
+                                          emit install-plan.json (no submit; for Freighter UI)
   npm run cli -- install --smart-account <C…> --context-rule <file>
                  [--frequency-policy <C…>] [--spending-limit-policy <C…>]
                  [--signer <G…>] [--dry-run] [--network testnet] [--only <name>]
@@ -93,8 +98,8 @@ Verify flags:
   --spending-limit-policy <C…> classify spending_limit wrapper on live fetch
   --network <n>              testnet|mainnet|futurenet (testnet)
 
-Install / account:create are TESTNET ONLY. MCP: npm run mcp (stdio; exactly four
-tools — record / synthesize / simulate / verify; never install).`;
+Install / prepare-install / account:create are TESTNET ONLY. MCP: npm run mcp
+(stdio; exactly four tools — record / synthesize / simulate / verify; never install).`;
 
 /** Minimal `--key value` / `--key=value` flag parser. */
 function parseFlags(args: readonly string[]): Map<string, string> {
@@ -320,22 +325,21 @@ function cmdAccountCreate(rest: readonly string[]): void {
   );
 }
 
-async function cmdInstall(rest: readonly string[]): Promise<void> {
+async function buildInstallPlan(rest: readonly string[]) {
   const flags = parseFlags(rest);
   const smartAccount = flags.get('smart-account');
   const contextRulePath = flags.get('context-rule');
   if (smartAccount === undefined || contextRulePath === undefined) {
-    throw badInput('install requires --smart-account <C…> and --context-rule <file>');
+    throw badInput(
+      'prepare-install / install require --smart-account <C…> and --context-rule <file>',
+    );
   }
   const network = parseNetwork(flags.get('network'));
   if (network !== 'testnet') {
-    throw badInput('install is TESTNET ONLY');
+    throw badInput('prepare-install / install are TESTNET ONLY');
   }
   const identity = requireTestnetIdentity(flags.get('network'));
   const signer = flags.get('signer') ?? identity.publicKey;
-  const dryRun = boolFlag(flags, 'dry-run', false);
-  const only = flags.get('only');
-
   const spendingLimitPolicyAddress = flags.get('spending-limit-policy');
   const plan = await prepareInstall(
     spendingLimitPolicyAddress !== undefined
@@ -355,6 +359,34 @@ async function cmdInstall(rest: readonly string[]): Promise<void> {
           signers: [signer],
         },
   );
+  return { flags, smartAccount, contextRulePath, identity, plan };
+}
+
+async function cmdPrepareInstall(rest: readonly string[]): Promise<void> {
+  const { flags, plan } = await buildInstallPlan(rest);
+  const outPath = flags.get('out');
+  const json = `${JSON.stringify(plan, null, 2)}\n`;
+  if (outPath !== undefined) {
+    mkdirSync(dirname(outPath), { recursive: true });
+    writeFileSync(outPath, json);
+    process.stdout.write(
+      [
+        `wrote: ${outPath}`,
+        `readyToSign: ${plan.readyToSign}`,
+        `rules: ${plan.rules.length}`,
+        `preferred: ${plan.signingHierarchy.preferred}`,
+        `tip: paste into wallet/ (npx serve wallet) or Freighter sign flow`,
+      ].join('\n') + '\n',
+    );
+  } else {
+    process.stdout.write(json);
+  }
+}
+
+async function cmdInstall(rest: readonly string[]): Promise<void> {
+  const { flags, smartAccount, contextRulePath, identity, plan } = await buildInstallPlan(rest);
+  const dryRun = boolFlag(flags, 'dry-run', false);
+  const only = flags.get('only');
 
   process.stdout.write(
     [
@@ -468,6 +500,9 @@ async function main(): Promise<void> {
       return;
     case 'account:create':
       cmdAccountCreate(rest);
+      return;
+    case 'prepare-install':
+      await cmdPrepareInstall(rest);
       return;
     case 'install':
       await cmdInstall(rest);

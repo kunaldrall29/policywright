@@ -47,6 +47,27 @@ describe('verify/diff (on-chain vs emitted)', () => {
     expect(paramsDiff?.message).toMatch(/install params mismatch/i);
   });
 
+  it('fails when emitted installParams are missing on-chain (unverifiable)', () => {
+    const emitted = parseEmittedContextRule(loadJson(LIVE_CONTEXT_RULE));
+    const match = parseOnChainSnapshot(loadJson(MATCH_SNAPSHOT));
+    const stripped = parseOnChainSnapshot({
+      ...match,
+      contextRules: match.contextRules.map((rule) => ({
+        ...rule,
+        policies: rule.policies.map((p) => {
+          const { installParams: _drop, ...rest } = p;
+          return rest;
+        }),
+      })),
+    });
+    const result = diffEmittedVsOnChain(emitted, stripped);
+    expect(result.ok).toBe(false);
+    const unverifiable = result.diffs.filter((d) =>
+      /install params unverifiable/i.test(d.message),
+    );
+    expect(unverifiable.length).toBeGreaterThan(0);
+  });
+
   it('passes for the offline fixture context-rule + matching snapshot', () => {
     const emitted = parseEmittedContextRule(loadJson(FIXTURE_CONTEXT_RULE));
     const snapshot = parseOnChainSnapshot(loadJson(FIXTURE_MATCH));

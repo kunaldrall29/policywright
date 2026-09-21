@@ -44,6 +44,30 @@ function showStatus(el, text, ok) {
   el.classList.toggle('err', ok === false);
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Encode plan signers as Vec&lt;Signer&gt; with Delegated(Address) variants.
+ * Plans carry plain G-strings; OZ expects enum XDR, not ScSymbol.
+ */
+function signersToScVal(signers) {
+  const entries = (signers ?? []).map((entry) => {
+    const g =
+      typeof entry === 'string'
+        ? entry
+        : entry && typeof entry === 'object' && typeof entry.Delegated === 'string'
+          ? entry.Delegated
+          : null;
+    if (typeof g !== 'string' || !g.startsWith('G')) {
+      throw new Error(`signer must be a G… address, got ${JSON.stringify(entry)}`);
+    }
+    return xdr.ScVal.scvVec([xdr.ScVal.scvSymbol('Delegated'), Address.fromString(g).toScVal()]);
+  });
+  return xdr.ScVal.scvVec(entries);
+}
+
 document.getElementById('btn-sample').addEventListener('click', () => {
   planEl.value = JSON.stringify(
     {
@@ -79,7 +103,7 @@ document.getElementById('btn-sample').addEventListener('click', () => {
       ],
       freighter: {
         networkPassphrase: 'Test SDF Network ; September 2015',
-        tip: 'Replace this sample with a real install-plan.json from the CLI.',
+        tip: 'Replace this sample with a real install-plan.json from prepare-install.',
       },
       notes: ['Sample only.'],
     },
@@ -221,8 +245,42 @@ function buildAddContextRuleOp(smartAccount, rule) {
     ),
     nativeToScVal(rule.name, { type: 'string' }),
     nativeToScVal(Number(rule.validUntilLedger), { type: 'u32' }),
-    nativeToScVal(rule.signers ?? [], { type: ['symbol'] }),
+    signersToScVal(rule.signers),
     xdr.ScVal.scvMap(mapEntries),
+  );
+}
+
+/**
+ * Wait until RPC reports SUCCESS (or fail). sendTransaction often returns
+ * PENDING before inclusion — reloading the account too early reuses a stale
+ * sequence for the next rule.
+ */
+async function waitForSuccess(server, sent, ruleName) {
+  if (sent.status === 'ERROR') {
+    const detail =
+      sent.errorResultXdr ??
+      sent.errorResult?.toXDR?.('base64') ??
+      JSON.stringify(sent);
+    throw new Error(`send ${ruleName} ERROR: ${detail}`);
+  }
+  if (sent.status === 'SUCCESS') {
+    return { rule: ruleName, status: 'SUCCESS', hash: sent.hash };
+  }
+
+  const hash = sent.hash;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    await sleep(1500);
+    const got = await server.getTransaction(hash);
+    if (got.status === 'SUCCESS') {
+      return { rule: ruleName, status: 'SUCCESS', hash };
+    }
+    if (got.status === 'FAILED') {
+      throw new Error(`getTransaction ${ruleName} FAILED hash=${hash}`);
+    }
+    // NOT_FOUND / PENDING — keep polling
+  }
+  throw new Error(
+    `timed out waiting for ${ruleName} (hash=${hash}, lastSendStatus=${sent.status})`,
   );
 }
 
@@ -257,7 +315,8 @@ signBtn.addEventListener('click', async () => {
       if (signed.error) throw new Error(String(signed.error));
       const envelope = TransactionBuilder.fromXDR(signed.signedTxXdr, passphrase);
       const sent = await server.sendTransaction(envelope);
-      results.push({ rule: rule.name, status: sent.status, hash: sent.hash });
+      const confirmed = await waitForSuccess(server, sent, rule.name);
+      results.push(confirmed);
       account = await server.getAccount(freighterPublicKey);
     }
 
